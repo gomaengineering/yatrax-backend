@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    phoneNumber: {
+    phone: {
       type: String,
       required: [true, "Phone number is required"],
       unique: true,

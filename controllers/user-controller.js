@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "../models/user-model.js";
 import jwt from "jsonwebtoken";
 
 // Helper function to generate JWT token
@@ -6,14 +6,14 @@ const generateToken = (userId, role) => {
   return jwt.sign(
     { id: userId, role },
     process.env.JWT_SECRET, // must be set in your .env file
-    { expiresIn: "7d" } // token valid for 7 days
+    { expiresIn: "2d" } // token valid for 7 days
   );
 };
 
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password, role } = req.body;
+    const { name, email, phone, password, confirmPassword ,role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -21,6 +21,10 @@ export const registerUser = async (req, res) => {
     });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email or phone already in use" });
+    }
+    
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" });
     }
 
     // Create user
@@ -50,13 +54,27 @@ export const registerUser = async (req, res) => {
 // 🔑 LOGIN USER
 export const loginUser = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { identifier, password } = req.body; // 'identifier' can be email or phone
 
-    // Find user by email or phone
-    const user = await User.findOne({
-      $or: [{ email: emailOrPhone }, { phone: emailOrPhone }],
-    }).select("+password");
+    // Basic validation
+    if (!identifier || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email/phone and password are required",
+      });
+    }
 
+    // Determine if the identifier is an email or phone number
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
+    let query;
+    if (isEmail) {
+      query = { email: identifier.toLowerCase() };
+    } else {
+      query = { phone: identifier };
+    }
+
+    // Find user
+    const user = await User.findOne(query).select("+password");
     if (!user) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
@@ -87,3 +105,4 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
