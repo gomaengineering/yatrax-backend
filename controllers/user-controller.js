@@ -1,14 +1,5 @@
 import User from "../models/user-model.js";
-import jwt from "jsonwebtoken";
-
-// Helper function to generate JWT token
-const generateToken = (userId, role) => {
-  return jwt.sign(
-    { id: userId, role },
-    process.env.JWT_SECRET, // must be set in your .env file
-    { expiresIn: "2d" } // token valid for 7 days
-  );
-};
+import generateToken from "../utils/generateToken.js";
 
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
@@ -30,8 +21,8 @@ export const registerUser = async (req, res) => {
     // Create user
     const newUser = await User.create({ name, email, phone, password, role });
 
-    // Generate token
-    const token = generateToken(newUser._id, newUser.role);
+    // Generate JWT token using the utility function
+    const token = generateTokenn(newUser._id, newUser.role);
 
     res.status(201).json({
       success: true,
@@ -85,7 +76,7 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
 
-    // Generate JWT token
+    // Generate JWT token using the utility function
     const token = generateToken(user._id, user.role);
 
     res.status(200).json({
