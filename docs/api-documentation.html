@@ -299,13 +299,13 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>FirstName</td>
+                                        <td>firstName</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>User's first name</td>
                                     </tr>
                                     <tr>
-                                        <td>LastName</td>
+                                        <td>lastName</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>User's last name</td>
@@ -352,8 +352,8 @@
                         <div class="detail-section">
                             <div class="detail-title">Request Example</div>
                             <div class="code-block json">{
-  "FirstName": "John",
-  "LastName": "Doe",
+  "firstName": "John",
+  "lastName": "Doe",
   "email": "john.doe@example.com",
   "password": "password123",
   "confirmPassword": "password123",
@@ -375,8 +375,8 @@
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "507f1f77bcf86cd799439011",
-    "FirstName": "John",
-    "LastName": "Doe",
+    "firstName": "John",
+    "lastName": "Doe",
     "email": "john.doe@example.com",
     "country": "Nepal",
     "role": "user",
@@ -444,8 +444,8 @@
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "507f1f77bcf86cd799439011",
-    "FirstName": "John",
-    "LastName": "Doe",
+    "firstName": "John",
+    "lastName": "Doe",
     "email": "john.doe@example.com",
     "country": "Nepal",
     "role": "user",
@@ -507,8 +507,8 @@
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": "507f1f77bcf86cd799439011",
-    "FirstName": "John",
-    "LastName": "Doe",
+    "firstName": "John",
+    "lastName": "Doe",
     "email": "john.doe@gmail.com",
     "country": null,
     "role": "user",
@@ -547,13 +547,13 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>FirstName</td>
+                                        <td>firstName</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Guide's first name</td>
                                     </tr>
                                     <tr>
-                                        <td>LastName</td>
+                                        <td>lastName</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Guide's last name</td>
@@ -577,7 +577,7 @@
                                         <td>Password confirmation (must match password)</td>
                                     </tr>
                                     <tr>
-                                        <td>Description</td>
+                                        <td>description</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Guide's description/bio</td>
@@ -589,37 +589,37 @@
                                         <td>Tourism Board registration number</td>
                                     </tr>
                                     <tr>
-                                        <td>TrekAreas</td>
+                                        <td>trekAreas</td>
                                         <td>Array</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Array of trek areas (non-empty)</td>
                                     </tr>
                                     <tr>
-                                        <td>Experience</td>
-                                        <td>String</td>
+                                        <td>experience</td>
+                                        <td>Number</td>
                                         <td><span class="required">Yes</span></td>
-                                        <td>Years of experience or experience description</td>
+                                        <td>Years of experience (number)</td>
                                     </tr>
                                     <tr>
-                                        <td>Education</td>
+                                        <td>education</td>
                                         <td>String</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Educational background</td>
                                     </tr>
                                     <tr>
-                                        <td>Languages</td>
+                                        <td>languages</td>
                                         <td>Array</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Array of languages spoken (non-empty)</td>
                                     </tr>
                                     <tr>
-                                        <td>RatePerDay</td>
+                                        <td>ratePerDay</td>
                                         <td>Number</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Rate per day (must be positive number)</td>
                                     </tr>
                                     <tr>
-                                        <td>Certifications</td>
+                                        <td>certifications</td>
                                         <td>Array</td>
                                         <td><span class="required">Yes</span></td>
                                         <td>Array of certifications (non-empty)</td>
@@ -636,19 +636,19 @@
                         <div class="detail-section">
                             <div class="detail-title">Request Example</div>
                             <div class="code-block json">{
-  "FirstName": "Sherpa",
-  "LastName": "Tenzing",
+  "firstName": "Sherpa",
+  "lastName": "Tenzing",
   "email": "tenzing@example.com",
   "password": "password123",
   "confirmPassword": "password123",
-  "Description": "Experienced mountain guide with 10+ years",
+  "description": "Experienced mountain guide with 10+ years",
   "TBNumber": "TB-12345",
-  "TrekAreas": ["Everest Base Camp", "Annapurna Circuit"],
-  "Experience": "10 years",
-  "Education": "Mountain Guide Certification",
-  "Languages": ["English", "Nepali", "Tibetan"],
-  "RatePerDay": 5000,
-  "Certifications": ["IFMGA Certified", "Wilderness First Aid"]
+  "trekAreas": ["Everest Base Camp", "Annapurna Circuit"],
+  "experience": 10,
+  "education": "Mountain Guide Certification",
+  "languages": ["English", "Nepali", "Tibetan"],
+  "ratePerDay": 5000,
+  "certifications": ["IFMGA Certified", "Wilderness First Aid"]
 }</div>
                         </div>
                         <div class="detail-section">
@@ -664,18 +664,18 @@
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "guide": {
     "id": "507f1f77bcf86cd799439012",
-    "FirstName": "Sherpa",
-    "LastName": "Tenzing",
+    "firstName": "Sherpa",
+    "lastName": "Tenzing",
     "email": "tenzing@example.com",
     "role": "guide",
-    "Description": "Experienced mountain guide with 10+ years",
+    "description": "Experienced mountain guide with 10+ years",
     "TBNumber": "TB-12345",
-    "TrekAreas": ["Everest Base Camp", "Annapurna Circuit"],
-    "Experience": "10 years",
-    "Education": "Mountain Guide Certification",
-    "Languages": ["English", "Nepali", "Tibetan"],
-    "RatePerDay": 5000,
-    "Certifications": ["IFMGA Certified", "Wilderness First Aid"]
+    "trekAreas": ["Everest Base Camp", "Annapurna Circuit"],
+    "experience": 10,
+    "education": "Mountain Guide Certification",
+    "languages": ["English", "Nepali", "Tibetan"],
+    "ratePerDay": 5000,
+    "certifications": ["IFMGA Certified", "Wilderness First Aid"]
   }
 }</div>
                         </div>
@@ -739,18 +739,18 @@
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "guide": {
     "id": "507f1f77bcf86cd799439012",
-    "FirstName": "Sherpa",
-    "LastName": "Tenzing",
+    "firstName": "Sherpa",
+    "lastName": "Tenzing",
     "email": "tenzing@example.com",
     "role": "guide",
-    "Description": "Experienced mountain guide with 10+ years",
+    "description": "Experienced mountain guide with 10+ years",
     "TBNumber": "TB-12345",
-    "TrekAreas": ["Everest Base Camp", "Annapurna Circuit"],
-    "Experience": "10 years",
-    "Education": "Mountain Guide Certification",
-    "Languages": ["English", "Nepali", "Tibetan"],
-    "RatePerDay": 5000,
-    "Certifications": ["IFMGA Certified", "Wilderness First Aid"]
+    "trekAreas": ["Everest Base Camp", "Annapurna Circuit"],
+    "experience": 10,
+    "education": "Mountain Guide Certification",
+    "languages": ["English", "Nepali", "Tibetan"],
+    "ratePerDay": 5000,
+    "certifications": ["IFMGA Certified", "Wilderness First Aid"]
   }
 }</div>
                         </div>
