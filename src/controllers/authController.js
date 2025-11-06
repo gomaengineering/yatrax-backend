@@ -1,4 +1,4 @@
-import User from "../models/user-model.js";
+import User from "../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
 import { oauth2Client } from "../utils/googleConfig.js";
 

@@ -4,9 +4,14 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    FirstName: {
       type: String,
       required: [true, "Name is required"],
+      trim: true,
+    },
+    LastName: {
+      type: String,
+      required: [true, "Last Name is required"],
       trim: true,
     },
     email: {
@@ -22,6 +27,11 @@ const userSchema = new mongoose.Schema(
       unique: true,
       match: [/^[0-9]{7,15}$/, "Please enter a valid phone number"], // allows 7–15 digits
     },
+    country:{
+      type: String,
+      required: [true, "Country is required"],
+      trim: true,
+    },
     password: {
       type: String,
       required: [true, "Password is required"],
@@ -32,6 +42,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["user", "porter", "admin"],
       default: "user",
+    },
+    subscription: {
+      type: String,
+      enum: ["free", "premium"],
+      default: "free",
     },
 
   },
