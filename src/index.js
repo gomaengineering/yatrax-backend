@@ -6,6 +6,7 @@ import connectDB from './config/db.js';
 import dotenv from 'dotenv';
 import userRoutes from './routes/userAuthRoutes.js';
 import guideRoutes from './routes/guideAuthRoutes.js';
+import trailRoutes from './routes/trailRoutes.js';
 
 dotenv.config();
 
@@ -37,8 +38,9 @@ app.get('/api-docs', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
 });
 
-app.use("/api/auth/user", userRoutes)
-app.use("/api/auth/guide", guideRoutes)
+app.use("/api/auth/user", userRoutes);
+app.use("/api/auth/guide", guideRoutes);
+app.use("/api/trails", trailRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

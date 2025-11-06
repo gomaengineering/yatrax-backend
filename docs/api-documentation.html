@@ -269,6 +269,7 @@
                 <ul>
                     <li><a href="#user-auth">User Authentication APIs</a></li>
                     <li><a href="#guide-auth">Guide Authentication APIs</a></li>
+                    <li><a href="#trail-apis">Trail & GeoJSON APIs</a></li>
                 </ul>
             </div>
 
@@ -752,6 +753,547 @@
     "ratePerDay": 5000,
     "certifications": ["IFMGA Certified", "Wilderness First Aid"]
   }
+}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trail & GeoJSON APIs Section -->
+            <div class="section" id="trail-apis">
+                <h2 class="section-title">🗺️ Trail & GeoJSON APIs</h2>
+
+                <!-- Create Trail -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/trails</span>
+                    </div>
+                    <div class="description">
+                        Create a new trail with GeoJSON data. Supports Point, LineString, Polygon, MultiPoint, MultiLineString, and MultiPolygon geometries.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>name</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>description</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Trail description</td>
+                                    </tr>
+                                    <tr>
+                                        <td>type</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>GeoJSON type (default: "Feature")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>geometry</td>
+                                        <td>Object</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>GeoJSON geometry object</td>
+                                    </tr>
+                                    <tr>
+                                        <td>properties</td>
+                                        <td>Object</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>GeoJSON properties object</td>
+                                    </tr>
+                                    <tr>
+                                        <td>difficulty</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Trail difficulty: "easy", "moderate", "hard", "expert"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>length</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Trail length in kilometers</td>
+                                    </tr>
+                                    <tr>
+                                        <td>elevation</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Trail elevation in meters</td>
+                                    </tr>
+                                    <tr>
+                                        <td>guideId</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Associated guide's ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block json">{
+  "name": "Everest Base Camp Trail",
+  "description": "Classic trek to Everest Base Camp",
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [86.9250, 27.9881]
+  },
+  "properties": {
+    "name": "Everest Base Camp",
+    "region": "Khumbu"
+  },
+  "difficulty": "hard",
+  "length": 130,
+  "elevation": 5364
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">201 Created</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Trail created successfully",
+  "trail": {
+    "_id": "507f1f77bcf86cd799439013",
+    "name": "Everest Base Camp Trail",
+    "description": "Classic trek to Everest Base Camp",
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [86.9250, 27.9881]
+    },
+    "properties": {
+      "name": "Everest Base Camp",
+      "region": "Khumbu"
+    },
+    "difficulty": "hard",
+    "length": 130,
+    "elevation": 5364,
+    "isActive": true,
+    "createdAt": "2023-11-06T10:30:00.000Z",
+    "updatedAt": "2023-11-06T10:30:00.000Z"
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get All Trails -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/trails</span>
+                    </div>
+                    <div class="description">
+                        Get all trails with pagination and filtering options.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>page</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Page number (default: 1)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>limit</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Items per page (default: 100)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>isActive</td>
+                                        <td>Boolean</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by active status</td>
+                                    </tr>
+                                    <tr>
+                                        <td>difficulty</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by difficulty level</td>
+                                    </tr>
+                                    <tr>
+                                        <td>guideId</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by guide ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block">GET /api/trails?page=1&limit=10&difficulty=hard&isActive=true</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 2,
+  "total": 25,
+  "page": 1,
+  "pages": 3,
+  "trails": [
+    {
+      "_id": "507f1f77bcf86cd799439013",
+      "name": "Everest Base Camp Trail",
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [86.9250, 27.9881]
+      },
+      "difficulty": "hard",
+      "isActive": true
+    }
+  ]
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Trail by ID -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific trail by its ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Path Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Find Trails Near Point -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/trails/near/point</span>
+                    </div>
+                    <div class="description">
+                        Find trails near a specific point using geospatial queries.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>longitude</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Longitude (-180 to 180)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>latitude</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Latitude (-90 to 90)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>maxDistance</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Maximum distance in meters (default: 10000)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>minDistance</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Minimum distance in meters (default: 0)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>limit</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Maximum results (default: 50)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block">GET /api/trails/near/point?longitude=86.9250&latitude=27.9881&maxDistance=5000</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Find Trails Within Polygon -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/trails/within/polygon</span>
+                    </div>
+                    <div class="description">
+                        Find trails within a specified polygon area.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>polygon</td>
+                                        <td>Object</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>GeoJSON Polygon object</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block json">{
+  "polygon": {
+    "type": "Polygon",
+    "coordinates": [[
+      [86.9, 27.9],
+      [87.0, 27.9],
+      [87.0, 28.0],
+      [86.9, 28.0],
+      [86.9, 27.9]
+    ]]
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Find Trails Within Radius -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/trails/within/radius</span>
+                    </div>
+                    <div class="description">
+                        Find trails within a circular area (radius in kilometers).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>longitude</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Center longitude</td>
+                                    </tr>
+                                    <tr>
+                                        <td>latitude</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Center latitude</td>
+                                    </tr>
+                                    <tr>
+                                        <td>radius</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Radius in kilometers (default: 10)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>limit</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Maximum results (default: 50)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block">GET /api/trails/within/radius?longitude=86.9250&latitude=27.9881&radius=25</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Trail -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing trail. All fields are optional in the request body.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Path Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Trail -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a trail by its ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Path Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Trail deleted successfully"
 }</div>
                         </div>
                     </div>
