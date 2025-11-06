@@ -4,12 +4,12 @@ import bcrypt from "bcryptjs";
 
 const guideSchema = new mongoose.Schema(
   {
-    FirstName: {
+    firstName: {
       type: String,
       required: [true, "First Name is required"],
       trim: true,
     },
-    LastName: {
+    lastName: {
       type: String,
       required: [true, "Last Name is required"],
       trim: true,
@@ -32,7 +32,7 @@ const guideSchema = new mongoose.Schema(
       enum: ["guide", "admin"],
       default: "guide",
     },
-    Description: {
+    description: {
       type: String,
       required: true,
       trim: true,
@@ -43,32 +43,32 @@ const guideSchema = new mongoose.Schema(
       trim: true,
       unique: true, // Multiple guides might not have TB Number
     },
-    TrekAreas: {
+    trekAreas: {
       type: [String], // Array of trekking areas
       required: true,
       default: [],
     },
-    Experience: {
+    experience: {
       type: Number,
       required: true,
       trim: true,
     },
-    Education: {
+    education: {
       type: String,
       required: true,
       trim: true,
     },
-    Languages: {
+    languages: {
       type: [String], // Array of languages spoken
       required: true,
       default: [],
     },
-    RatePerDay: {
+    ratePerDay: {
       type: Number,
       required: true,
       min: [0, "Rate per day must be a positive number"],
     },
-    Certifications: {
+    certifications: {
       type: [String], // Array of certifications
       required: true,
       default: [],

@@ -5,28 +5,28 @@ import generateToken from "../utils/generateToken.js";
 export const registerGuide = async (req, res) => {
   try {
     const { 
-      FirstName, 
-      LastName, 
+      firstName, 
+      lastName, 
       email, 
       password, 
       confirmPassword, 
       role, 
-      Description, 
+      description, 
       TBNumber, 
-      TrekAreas, 
-      Experience, 
-      Education, 
-      Languages, 
-      RatePerDay, 
-      Certifications 
+      trekAreas, 
+      experience, 
+      education, 
+      languages, 
+      ratePerDay, 
+      certifications 
     } = req.body;
 
     // Validate required fields
-    if (!FirstName || !LastName || !email || !password || !Description || !TBNumber || 
-        !TrekAreas || !Experience || !Education || !Languages || !RatePerDay || !Certifications) {
+    if (!firstName || !lastName || !email || !password || !description || !TBNumber || 
+        !trekAreas || !experience || !education || !languages || !ratePerDay || !certifications) {
       return res.status(400).json({ 
         success: false, 
-        message: "All fields are required: FirstName, LastName, email, password, Description, TBNumber, TrekAreas, Experience, Education, Languages, RatePerDay, Certifications" 
+        message: "All fields are required: FirstName, lastName, email, password, Description, TBNumber, TrekAreas, Experience, Education, Languages, RatePerDay, Certifications" 
       });
     }
 
@@ -48,21 +48,21 @@ export const registerGuide = async (req, res) => {
     }
 
     // Validate arrays
-    if (!Array.isArray(TrekAreas) || TrekAreas.length === 0) {
+    if (!Array.isArray(trekAreas) || trekAreas.length === 0) {
       return res.status(400).json({ 
         success: false, 
         message: "TrekAreas must be a non-empty array" 
       });
     }
 
-    if (!Array.isArray(Languages) || Languages.length === 0) {
+    if (!Array.isArray(languages) || languages.length === 0) {
       return res.status(400).json({ 
         success: false, 
         message: "Languages must be a non-empty array" 
       });
     }
 
-    if (!Array.isArray(Certifications) || Certifications.length === 0) {
+    if (!Array.isArray(certifications) || certifications.length === 0) {
       return res.status(400).json({ 
         success: false, 
         message: "Certifications must be a non-empty array" 
@@ -70,7 +70,7 @@ export const registerGuide = async (req, res) => {
     }
 
     // Validate RatePerDay
-    if (typeof RatePerDay !== 'number' || RatePerDay < 0) {
+    if (typeof ratePerDay !== 'number' || ratePerDay < 0) {
       return res.status(400).json({ 
         success: false, 
         message: "RatePerDay must be a positive number" 
@@ -89,19 +89,19 @@ export const registerGuide = async (req, res) => {
 
     // Create guide
     const newGuide = await Guide.create({ 
-      FirstName, 
-      LastName, 
+      firstName, 
+      lastName, 
       email: email.toLowerCase(), 
       password, 
       role: role || "guide",
-      Description,
+      description,
       TBNumber,
-      TrekAreas,
-      Experience,
-      Education,
-      Languages,
-      RatePerDay,
-      Certifications
+      trekAreas,
+      experience,
+      education,
+      languages,
+      ratePerDay,
+      certifications
     });
 
     // Generate JWT token using the utility function
@@ -113,18 +113,18 @@ export const registerGuide = async (req, res) => {
       token,
       guide: {
         id: newGuide._id,
-        FirstName: newGuide.FirstName,
-        LastName: newGuide.LastName,
+        firstName: newGuide.firstName,
+        lastName: newGuide.lastName,
         email: newGuide.email,
         role: newGuide.role,
-        Description: newGuide.Description,
+        description: newGuide.description,
         TBNumber: newGuide.TBNumber,
-        TrekAreas: newGuide.TrekAreas,
-        Experience: newGuide.Experience,
-        Education: newGuide.Education,
-        Languages: newGuide.Languages,
-        RatePerDay: newGuide.RatePerDay,
-        Certifications: newGuide.Certifications,
+        trekAreas: newGuide.trekAreas,
+        experience: newGuide.experience,
+        education: newGuide.education,
+        languages: newGuide.languages,
+        ratePerDay: newGuide.ratePerDay,
+        certifications: newGuide.certifications,
       },
     });
   } catch (error) {
@@ -176,18 +176,18 @@ export const loginGuide = async (req, res) => {
       token,
       guide: {
         id: guide._id,
-        FirstName: guide.FirstName,
-        LastName: guide.LastName,
+        firstName: guide.firstName,
+        lastName: guide.lastName,
         email: guide.email,
         role: guide.role,
-        Description: guide.Description,
+        description: guide.description,
         TBNumber: guide.TBNumber,
-        TrekAreas: guide.TrekAreas,
-        Experience: guide.Experience,
-        Education: guide.Education,
-        Languages: guide.Languages,
-        RatePerDay: guide.RatePerDay,
-        Certifications: guide.Certifications,
+        trekAreas: guide.trekAreas,
+        experience: guide.experience,
+        education: guide.education,
+        languages: guide.languages,
+        ratePerDay: guide.ratePerDay,
+        certifications: guide.certifications,
       },
     });
   } catch (error) {
