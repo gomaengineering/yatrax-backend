@@ -1,5 +1,6 @@
 import User from "../models/user-model.js";
 import generateToken from "../utils/generateToken.js";
+import { oauth2Client } from "../utils/googleConfig.js";
 
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
@@ -22,7 +23,7 @@ export const registerUser = async (req, res) => {
     const newUser = await User.create({ name, email, phone, password, role });
 
     // Generate JWT token using the utility function
-    const token = generateTokenn(newUser._id, newUser.role);
+    const token = generateToken(newUser._id, newUser.role);
 
     res.status(201).json({
       success: true,
@@ -97,3 +98,92 @@ export const loginUser = async (req, res) => {
   }
 };
 
+export const googleLogin = async (req, res) => {
+  try {
+    // Check if req.body exists
+    if (!req.body) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Request body is missing. Make sure to send JSON data." 
+      });
+    }
+
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Google ID token is required" 
+      });
+    }
+
+    // Verify the ID token
+    const ticket = await oauth2Client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    // Get user info from verified token
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Unable to retrieve email from Google token" 
+      });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ email });
+
+    // If user doesn't exist, create a new one
+    if (!user) {
+      // For Google OAuth users, we don't have phone/password
+      // Generate a random phone number or make it optional
+      // For now, we'll use a placeholder that won't conflict
+      const tempPhone = `google_${Date.now()}`;
+      const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
+      
+      user = await User.create({
+        name: name || "Google User",
+        email: email.toLowerCase(),
+        phone: tempPhone,
+        password: tempPassword, // Will be hashed by pre-save hook
+        role: "user",
+      });
+    }
+
+    // Generate JWT token
+    const token = generateToken(user._id, user.role);
+
+    res.status(200).json({
+      success: true,
+      message: "Google login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    
+    // Handle specific Google verification errors
+    if (error.message?.includes("Invalid token")) {
+      return res.status(401).json({ 
+        success: false,
+        message: "Invalid Google ID token" 
+      });
+    }
+
+    res.status(500).json({ 
+      success: false,
+      message: "Internal Server Error",
+      error: error.message 
+    });
+  }
+};
