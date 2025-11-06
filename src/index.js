@@ -26,8 +26,15 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve docs directory
+app.use('/docs', express.static(path.join(__dirname, '../docs')));
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+app.get('/api-docs', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
 });
 
 app.use("/api/auth/user", userRoutes)
