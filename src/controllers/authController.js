@@ -7,11 +7,11 @@ export const registerUser = async (req, res) => {
   try {
     const { FirstName, LastName, email, phone, password, confirmPassword, country, role, subscription } = req.body;
 
-    // Validate required fields
-    if (!FirstName || !LastName || !email || !password || !country) {
+    // Validate required fields (phone and country are optional)
+    if (!FirstName || !LastName || !email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: "FirstName, LastName, email, password, and country are required" 
+        message: "FirstName, LastName, email, and password are required" 
       });
     }
 
@@ -19,6 +19,14 @@ export const registerUser = async (req, res) => {
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email already in use" });
+    }
+
+    // If phone is provided, check if it's already in use
+    if (phone) {
+      const existingPhoneUser = await User.findOne({ phone });
+      if (existingPhoneUser) {
+        return res.status(400).json({ success: false, message: "Phone number already in use" });
+      }
     }
     
     if (password !== confirmPassword) {
@@ -165,17 +173,16 @@ export const googleLogin = async (req, res) => {
       const firstName = given_name || name?.split(' ')[0] || "Google";
       const lastName = family_name || name?.split(' ').slice(1).join(' ') || "User";
       
-      // Generate temporary phone and password for Google OAuth users
-      const tempPhone = `google_${Date.now()}`;
+      // Generate temporary password for Google OAuth users (phone is optional now)
       const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
       
       user = await User.create({
         FirstName: firstName,
         LastName: lastName,
         email: email.toLowerCase(),
-        phone: tempPhone,
+        // phone is optional - not provided for Google OAuth users
         password: tempPassword, // Will be hashed by pre-save hook
-        country: "Unknown", // Default country for Google OAuth users
+        // country is optional - not provided by Google OAuth
         role: "user",
         subscription: "free",
       });
