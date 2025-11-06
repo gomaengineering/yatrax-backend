@@ -21,21 +21,6 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    phone: {
-      type: String,
-      required: false, // Optional for Google OAuth users
-      unique: true,
-      sparse: true, // Allows multiple null/undefined values
-      validate: {
-        validator: function(v) {
-          // Only validate if phone is provided
-          if (!v) return true;
-          return /^[0-9]{7,15}$/.test(v); // allows 7–15 digits
-        },
-        message: "Please enter a valid phone number (7-15 digits)"
-      },
-      trim: true,
-    },
     country:{
       type: String,
       required: false, // Optional for Google OAuth users
