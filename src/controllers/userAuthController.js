@@ -59,7 +59,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// 🔑 LOGIN USER (Email only)
+//  LOGIN USER (Email only)
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;

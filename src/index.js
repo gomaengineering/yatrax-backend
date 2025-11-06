@@ -4,7 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import dotenv from 'dotenv';
-import userRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userAuthRoutes.js';
+import guideRoutes from './routes/guideAuthRoutes.js';
 
 dotenv.config();
 
@@ -29,7 +30,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.use("/api/auth", userRoutes)
+app.use("/api/auth/user", userRoutes)
+app.use("/api/auth/guide", guideRoutes)
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
