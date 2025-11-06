@@ -5,9 +5,9 @@ import { oauth2Client } from "../utils/googleConfig.js";
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
   try {
-    const { FirstName, LastName, email, phone, password, confirmPassword, country, role, subscription } = req.body;
+    const { FirstName, LastName, email, password, confirmPassword, country, role, subscription } = req.body;
 
-    // Validate required fields (phone and country are optional)
+    // Validate required fields
     if (!FirstName || !LastName || !email || !password) {
       return res.status(400).json({ 
         success: false, 
@@ -20,14 +20,6 @@ export const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email already in use" });
     }
-
-    // If phone is provided, check if it's already in use
-    if (phone) {
-      const existingPhoneUser = await User.findOne({ phone });
-      if (existingPhoneUser) {
-        return res.status(400).json({ success: false, message: "Phone number already in use" });
-      }
-    }
     
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: "Passwords do not match" });
@@ -38,7 +30,6 @@ export const registerUser = async (req, res) => {
       FirstName, 
       LastName, 
       email: email.toLowerCase(), 
-      phone, 
       password, 
       country,
       role: role || "user",
@@ -57,7 +48,6 @@ export const registerUser = async (req, res) => {
         FirstName: newUser.FirstName,
         LastName: newUser.LastName,
         email: newUser.email,
-        phone: newUser.phone,
         country: newUser.country,
         role: newUser.role,
         subscription: newUser.subscription,
@@ -115,7 +105,6 @@ export const loginUser = async (req, res) => {
         FirstName: user.FirstName,
         LastName: user.LastName,
         email: user.email,
-        phone: user.phone,
         country: user.country,
         role: user.role,
         subscription: user.subscription,
@@ -173,14 +162,13 @@ export const googleLogin = async (req, res) => {
       const firstName = given_name || name?.split(' ')[0] || "Google";
       const lastName = family_name || name?.split(' ').slice(1).join(' ') || "User";
       
-      // Generate temporary password for Google OAuth users (phone is optional now)
+      // Generate temporary password for Google OAuth users
       const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
       
       user = await User.create({
         FirstName: firstName,
         LastName: lastName,
         email: email.toLowerCase(),
-        // phone is optional - not provided for Google OAuth users
         password: tempPassword, // Will be hashed by pre-save hook
         // country is optional - not provided by Google OAuth
         role: "user",
@@ -200,7 +188,6 @@ export const googleLogin = async (req, res) => {
         FirstName: user.FirstName,
         LastName: user.LastName,
         email: user.email,
-        phone: user.phone,
         country: user.country,
         role: user.role,
         subscription: user.subscription,
