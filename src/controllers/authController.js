@@ -5,14 +5,20 @@ import { oauth2Client } from "../utils/googleConfig.js";
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password, confirmPassword ,role } = req.body;
+    const { FirstName, LastName, email, phone, password, confirmPassword, country, role, subscription } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { phone }],
-    });
+    // Validate required fields
+    if (!FirstName || !LastName || !email || !password || !country) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "FirstName, LastName, email, password, and country are required" 
+      });
+    }
+
+    // Check if user already exists by email
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "Email or phone already in use" });
+      return res.status(400).json({ success: false, message: "Email already in use" });
     }
     
     if (password !== confirmPassword) {
@@ -20,7 +26,16 @@ export const registerUser = async (req, res) => {
     }
 
     // Create user
-    const newUser = await User.create({ name, email, phone, password, role });
+    const newUser = await User.create({ 
+      FirstName, 
+      LastName, 
+      email: email.toLowerCase(), 
+      phone, 
+      password, 
+      country,
+      role: role || "user",
+      subscription: subscription || "free"
+    });
 
     // Generate JWT token using the utility function
     const token = generateToken(newUser._id, newUser.role);
@@ -31,42 +46,45 @@ export const registerUser = async (req, res) => {
       token,
       user: {
         id: newUser._id,
-        name: newUser.name,
+        FirstName: newUser.FirstName,
+        LastName: newUser.LastName,
         email: newUser.email,
         phone: newUser.phone,
+        country: newUser.country,
         role: newUser.role,
+        subscription: newUser.subscription,
       },
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 
-// 🔑 LOGIN USER
+// 🔑 LOGIN USER (Email only)
 export const loginUser = async (req, res) => {
   try {
-    const { identifier, password } = req.body; // 'identifier' can be email or phone
+    const { email, password } = req.body;
 
     // Basic validation
-    if (!identifier || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email/phone and password are required",
+        message: "Email and password are required",
       });
     }
 
-    // Determine if the identifier is an email or phone number
-    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
-    let query;
-    if (isEmail) {
-      query = { email: identifier.toLowerCase() };
-    } else {
-      query = { phone: identifier };
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address",
+      });
     }
 
-    // Find user
-    const user = await User.findOne(query).select("+password");
+    // Find user by email only
+    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
     if (!user) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
     }
@@ -86,10 +104,13 @@ export const loginUser = async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        FirstName: user.FirstName,
+        LastName: user.LastName,
         email: user.email,
         phone: user.phone,
+        country: user.country,
         role: user.role,
+        subscription: user.subscription,
       },
     });
   } catch (error) {
@@ -98,6 +119,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// 🔐 GOOGLE LOGIN
 export const googleLogin = async (req, res) => {
   try {
     // Check if req.body exists
@@ -125,7 +147,7 @@ export const googleLogin = async (req, res) => {
 
     // Get user info from verified token
     const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
+    const { email, given_name, family_name, name, picture } = payload;
 
     if (!email) {
       return res.status(400).json({ 
@@ -135,22 +157,27 @@ export const googleLogin = async (req, res) => {
     }
 
     // Check if user exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: email.toLowerCase() });
 
     // If user doesn't exist, create a new one
     if (!user) {
-      // For Google OAuth users, we don't have phone/password
-      // Generate a random phone number or make it optional
-      // For now, we'll use a placeholder that won't conflict
+      // Split name into FirstName and LastName
+      const firstName = given_name || name?.split(' ')[0] || "Google";
+      const lastName = family_name || name?.split(' ').slice(1).join(' ') || "User";
+      
+      // Generate temporary phone and password for Google OAuth users
       const tempPhone = `google_${Date.now()}`;
       const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
       
       user = await User.create({
-        name: name || "Google User",
+        FirstName: firstName,
+        LastName: lastName,
         email: email.toLowerCase(),
         phone: tempPhone,
         password: tempPassword, // Will be hashed by pre-save hook
+        country: "Unknown", // Default country for Google OAuth users
         role: "user",
+        subscription: "free",
       });
     }
 
@@ -163,20 +190,23 @@ export const googleLogin = async (req, res) => {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        FirstName: user.FirstName,
+        LastName: user.LastName,
         email: user.email,
         phone: user.phone,
+        country: user.country,
         role: user.role,
+        subscription: user.subscription,
       },
     });
   } catch (error) {
     console.error("Google login error:", error);
     
     // Handle specific Google verification errors
-    if (error.message?.includes("Invalid token")) {
+    if (error.message?.includes("Invalid token") || error.message?.includes("Token used too early")) {
       return res.status(401).json({ 
         success: false,
-        message: "Invalid Google ID token" 
+        message: "Invalid or expired Google ID token" 
       });
     }
 
