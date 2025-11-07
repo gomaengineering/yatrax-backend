@@ -4,12 +4,12 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
-    FirstName: {
+    firstName: {
       type: String,
       required: [true, "Name is required"],
       trim: true,
     },
-    LastName: {
+    lastName: {
       type: String,
       required: [true, "Last Name is required"],
       trim: true,
@@ -21,21 +21,6 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
-    phone: {
-      type: String,
-      required: false, // Optional for Google OAuth users
-      unique: true,
-      sparse: true, // Allows multiple null/undefined values
-      validate: {
-        validator: function(v) {
-          // Only validate if phone is provided
-          if (!v) return true;
-          return /^[0-9]{7,15}$/.test(v); // allows 7–15 digits
-        },
-        message: "Please enter a valid phone number (7-15 digits)"
-      },
-      trim: true,
-    },
     country:{
       type: String,
       required: false, // Optional for Google OAuth users
@@ -44,7 +29,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters long"],
+      minlength: [8, "Password must be at least 8 characters long"],
       select: false, // hides password by default
     },
     role: {
@@ -62,7 +47,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// 🔐 Hash password before saving
+// Hash password before saving
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -75,7 +60,7 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// 🧩 Compare entered password with hashed password
+// Compare entered password with hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

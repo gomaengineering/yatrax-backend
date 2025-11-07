@@ -5,13 +5,13 @@ import { oauth2Client } from "../utils/googleConfig.js";
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
   try {
-    const { FirstName, LastName, email, phone, password, confirmPassword, country, role, subscription } = req.body;
+    const { firstName, lastName, email, password, confirmPassword, country, role, subscription } = req.body;
 
-    // Validate required fields (phone and country are optional)
-    if (!FirstName || !LastName || !email || !password) {
+    // Validate required fields
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ 
         success: false, 
-        message: "FirstName, LastName, email, and password are required" 
+        message: "firstName, lastName, email, and password are required" 
       });
     }
 
@@ -20,14 +20,6 @@ export const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email already in use" });
     }
-
-    // If phone is provided, check if it's already in use
-    if (phone) {
-      const existingPhoneUser = await User.findOne({ phone });
-      if (existingPhoneUser) {
-        return res.status(400).json({ success: false, message: "Phone number already in use" });
-      }
-    }
     
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: "Passwords do not match" });
@@ -35,10 +27,9 @@ export const registerUser = async (req, res) => {
 
     // Create user
     const newUser = await User.create({ 
-      FirstName, 
-      LastName, 
+      firstName, 
+      lastName, 
       email: email.toLowerCase(), 
-      phone, 
       password, 
       country,
       role: role || "user",
@@ -54,10 +45,9 @@ export const registerUser = async (req, res) => {
       token,
       user: {
         id: newUser._id,
-        FirstName: newUser.FirstName,
-        LastName: newUser.LastName,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
         email: newUser.email,
-        phone: newUser.phone,
         country: newUser.country,
         role: newUser.role,
         subscription: newUser.subscription,
@@ -69,7 +59,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// 🔑 LOGIN USER (Email only)
+//  LOGIN USER (Email only)
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -112,10 +102,9 @@ export const loginUser = async (req, res) => {
       token,
       user: {
         id: user._id,
-        FirstName: user.FirstName,
-        LastName: user.LastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        phone: user.phone,
         country: user.country,
         role: user.role,
         subscription: user.subscription,
@@ -169,18 +158,17 @@ export const googleLogin = async (req, res) => {
 
     // If user doesn't exist, create a new one
     if (!user) {
-      // Split name into FirstName and LastName
+      // Split name into firstName and lastName
       const firstName = given_name || name?.split(' ')[0] || "Google";
       const lastName = family_name || name?.split(' ').slice(1).join(' ') || "User";
       
-      // Generate temporary password for Google OAuth users (phone is optional now)
+      // Generate temporary password for Google OAuth users
       const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
       
       user = await User.create({
-        FirstName: firstName,
-        LastName: lastName,
+        firstName: firstName,
+        lastName: lastName,
         email: email.toLowerCase(),
-        // phone is optional - not provided for Google OAuth users
         password: tempPassword, // Will be hashed by pre-save hook
         // country is optional - not provided by Google OAuth
         role: "user",
@@ -197,10 +185,9 @@ export const googleLogin = async (req, res) => {
       token,
       user: {
         id: user._id,
-        FirstName: user.FirstName,
-        LastName: user.LastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
-        phone: user.phone,
         country: user.country,
         role: user.role,
         subscription: user.subscription,

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YatraX - Google Sign In Test</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
             margin: 0;
@@ -15,20 +17,40 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .top-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
         }
 
         .container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 500px;
+            padding: 30px;
             width: 100%;
             text-align: center;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            width: 100%;
         }
 
         h1 {
@@ -199,75 +221,444 @@
             font-size: 13px;
             color: #555;
         }
+
+        /* Map Section Styles */
+        .map-section {
+            margin-top: 20px;
+        }
+
+        .map-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .file-upload-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .file-upload-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .file-input-wrapper input[type="file"]:hover {
+            border-color: #5568d3;
+            background: #f8f9fa;
+        }
+
+        .map-wrapper {
+            width: 100%;
+            height: 600px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #ddd;
+            margin-top: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .map-wrapper {
+                height: 700px;
+            }
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-info {
+            background: #e8f5e9;
+            border-left: 4px solid #2e7d32;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .map-error {
+            background: #ffebee;
+            border-left: 4px solid #c62828;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 13px;
+            color: #c62828;
+            display: none;
+        }
+
+        .map-error.show {
+            display: block;
+        }
+
+        .clear-map-btn {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .clear-map-btn:hover {
+            background: #d32f2f;
+        }
+
+        .clear-map-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (min-width: 768px) {
+            .top-section {
+                flex-direction: row;
+            }
+            .container {
+                flex: 1;
+                max-width: 500px;
+            }
+            .trail-list-section {
+                flex: 1;
+                max-width: 500px;
+            }
+        }
+
+        /* Trail List Component Styles */
+        .trail-list-section {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            width: 100%;
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #trailListContainer {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+
+        .trail-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .trail-list-header h3 {
+            color: #333;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .refresh-trails-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .refresh-trails-btn:hover {
+            background: #5568d3;
+        }
+
+        .trail-list-stats {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .trail-list-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .trail-item {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .trail-item:hover {
+            background: #e8f5e9;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .trail-item-selected {
+            background: #e3f2fd;
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .trail-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .trail-item-name {
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .trail-item-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-inactive {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .trail-item-description {
+            color: #555;
+            font-size: 14px;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+
+        .trail-item-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .trail-detail {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .trail-detail strong {
+            color: #333;
+        }
+
+        .trail-item-geometry {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .trail-item-geometry small {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .trail-list-loading,
+        .trail-list-empty,
+        .trail-list-error {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .trail-list-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        .trail-list-error-message {
+            color: #c62828;
+            font-size: 13px;
+            margin: 10px 0;
+        }
+
+        .retry-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .retry-btn:hover {
+            background: #5568d3;
+        }
+
+        @media (min-width: 1024px) {
+            .top-section {
+                gap: 30px;
+            }
+            .container {
+                max-width: 450px;
+            }
+            .trail-list-section {
+                max-width: 450px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 YatraX Backend</h1>
-        <p class="subtitle">Google Sign-In Test Page</p>
-        
-        <div class="info-box">
-            <strong>📝 Setup Instructions:</strong><br>
-            1. Enter your Google Client ID below (from .env file)<br>
-            2. Make sure your backend is running on port 3000<br>
-            3. Click "Save Configuration" then try signing in
-        </div>
+    <div class="main-wrapper">
+        <div class="top-section">
+            <div class="container">
+                <h1>🚀 YatraX Backend</h1>
+                <p class="subtitle">Google Sign-In Test Page</p>
+                
+                <div class="info-box">
+                    <strong>📝 Setup Instructions:</strong><br>
+                    1. Enter your Google Client ID below (from .env file)<br>
+                    2. Make sure your backend is running on port 3000<br>
+                    3. Click "Save Configuration" then try signing in
+                </div>
 
-        <div class="config-section">
-            <h3>⚙️ Configuration</h3>
-            <input type="text" id="clientIdInput" placeholder="Enter your Google Client ID" />
-            <input type="text" id="apiUrlInput" placeholder="API URL (default: http://localhost:3000)" value="http://localhost:3000" />
-            <button onclick="saveConfig()">Save Configuration</button>
-        </div>
+                <div class="config-section">
+                    <h3>⚙️ Configuration</h3>
+                    <input type="text" id="clientIdInput" placeholder="Enter your Google Client ID" />
+                    <input type="text" id="apiUrlInput" placeholder="API URL (default: http://localhost:3000)" value="http://localhost:3000" />
+                    <button onclick="saveConfig()">Save Configuration</button>
+                </div>
 
-        <div id="g_id_onload"
-             data-client_id=""
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        
-        <div id="signin-container" style="display: none;">
-            <div class="g_id_signin" 
-                 data-type="standard" 
-                 data-size="large" 
-                 data-theme="outline" 
-                 data-text="sign_in_with" 
-                 data-shape="rectangular" 
-                 data-logo_alignment="left">
+                <div id="g_id_onload"
+                     data-client_id=""
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                
+                <div id="signin-container" style="display: none;">
+                    <div class="g_id_signin" 
+                         data-type="standard" 
+                         data-size="large" 
+                         data-theme="outline" 
+                         data-text="sign_in_with" 
+                         data-shape="rectangular" 
+                         data-logo_alignment="left">
+                    </div>
+                    <button class="google-signin-btn" onclick="triggerGoogleSignIn()">
+                        <svg class="google-icon" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Sign in with Google
+                    </button>
+                </div>
+
+                <div class="loading" id="loading">
+                    ⏳ Processing...
+                </div>
+
+                <div class="response-container" id="response">
+                    <div class="response-title" id="responseTitle"></div>
+                    <div class="response-content" id="responseContent"></div>
+                </div>
+
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <h3>✅ Login Successful!</h3>
+                    <p><strong>Name:</strong> <span id="userName"></span></p>
+                    <p><strong>Email:</strong> <span id="userEmail"></span></p>
+                    <p><strong>Role:</strong> <span id="userRole"></span></p>
+                    <p><strong>Token:</strong> <span id="userToken" style="font-size: 10px; word-break: break-all;"></span></p>
+                </div>
             </div>
-            <button class="google-signin-btn" onclick="triggerGoogleSignIn()">
-                <svg class="google-icon" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Sign in with Google
-            </button>
+
+            <div class="trail-list-section">
+                <div id="trailListContainer">
+                    <div class="trail-list-loading">
+                        <p>⏳ Loading trails...</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="loading" id="loading">
-            ⏳ Processing...
-        </div>
+        <div class="map-container">
+            <div class="map-section">
+                <h2>🗺️ GeoJSON Map Viewer</h2>
+                
+                <div class="map-info">
+                    <strong>📝 Instructions:</strong><br>
+                    1. Upload a GeoJSON file (.json or .geojson)<br>
+                    2. Or click on a trail from the list above to view it on the map<br>
+                    3. Supports Point, LineString, Polygon, and FeatureCollection formats
+                </div>
 
-        <div class="response-container" id="response">
-            <div class="response-title" id="responseTitle"></div>
-            <div class="response-content" id="responseContent"></div>
-        </div>
+                <div class="file-upload-section">
+                    <h3>📁 Upload GeoJSON File</h3>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="geojsonFile" accept=".json,.geojson" />
+                    </div>
+                    <button class="clear-map-btn" id="clearMapBtn" onclick="clearMap()" disabled>Clear Map</button>
+                </div>
 
-        <div class="user-info" id="userInfo" style="display: none;">
-            <h3>✅ Login Successful!</h3>
-            <p><strong>Name:</strong> <span id="userName"></span></p>
-            <p><strong>Email:</strong> <span id="userEmail"></span></p>
-            <p><strong>Role:</strong> <span id="userRole"></span></p>
-            <p><strong>Token:</strong> <span id="userToken" style="font-size: 10px; word-break: break-all;"></span></p>
+                <div class="map-error" id="mapError"></div>
+
+                <div class="map-wrapper">
+                    <div id="map"></div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Trail List Component -->
+    <script src="trailListComponent.js"></script>
+    <!-- Google Sign-In -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Main Application Script -->
     <script>
         let GOOGLE_CLIENT_ID = '';
         let API_BASE_URL = 'http://localhost:3000';
+        let map = null;
+        let geoJsonLayer = null;
+        let trailListComponent = null;
 
         // Load saved configuration from localStorage
         function loadConfig() {
@@ -299,6 +690,12 @@
 
             // Initialize Google Sign-In
             initializeGoogleSignIn();
+            
+            // Reinitialize trail list component with new API URL
+            if (typeof TrailListComponent !== 'undefined' && map) {
+                trailListComponent = new TrailListComponent(API_BASE_URL, map, displayGeoJSON);
+                trailListComponent.loadTrails();
+            }
             
             alert('Configuration saved! You can now sign in with Google.');
         }
@@ -358,7 +755,7 @@
 
             try {
                 // Send the ID token to your backend
-                const backendResponse = await fetch(`${API_BASE_URL}/api/auth/google-login`, {
+                const backendResponse = await fetch(`${API_BASE_URL}/api/auth/user/google-login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -379,7 +776,9 @@
 
                     // Display user info
                     if (data.user) {
-                        document.getElementById('userName').textContent = `${data.user.FirstName} ${data.user.LastName}`;
+                        const firstName = data.user.firstName || data.user.FirstName || '';
+                        const lastName = data.user.lastName || data.user.LastName || '';
+                        document.getElementById('userName').textContent = `${firstName} ${lastName}`.trim() || 'User';
                         document.getElementById('userEmail').textContent = data.user.email;
                         document.getElementById('userRole').textContent = data.user.role;
                         document.getElementById('userToken').textContent = data.token;
@@ -399,9 +798,197 @@
             }
         }
 
+        // Initialize Map
+        function initializeMap() {
+            // Default center (Nepal - common trekking area)
+            map = L.map('map').setView([28.3949, 84.1240], 7);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Handle GeoJSON file upload
+        document.getElementById('geojsonFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const geoJsonData = JSON.parse(event.target.result);
+                    displayGeoJSON(geoJsonData);
+                } catch (error) {
+                    errorDiv.textContent = `Error parsing GeoJSON: ${error.message}`;
+                    errorDiv.classList.add('show');
+                }
+            };
+
+            reader.onerror = function() {
+                errorDiv.textContent = 'Error reading file. Please try again.';
+                errorDiv.classList.add('show');
+            };
+
+            reader.readAsText(file);
+        });
+
+        // Display GeoJSON on map (can be called from trail list component)
+        function displayGeoJSON(geoJsonData) {
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+
+            // Clear existing layer
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+            }
+
+            try {
+                // Validate GeoJSON structure
+                if (!geoJsonData) {
+                    throw new Error('Invalid GeoJSON: Empty data');
+                }
+
+                // Handle FeatureCollection
+                if (geoJsonData.type === 'FeatureCollection' && geoJsonData.features) {
+                    geoJsonLayer = L.geoJSON(geoJsonData, {
+                        style: function(feature) {
+                            return {
+                                color: '#667eea',
+                                weight: 3,
+                                opacity: 0.8,
+                                fillOpacity: 0.3,
+                                fillColor: '#667eea'
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div style="max-width: 200px;">';
+                                if (feature.properties.name) {
+                                    popupContent += `<strong>${feature.properties.name}</strong><br>`;
+                                }
+                                if (feature.properties.description) {
+                                    popupContent += `${feature.properties.description}<br>`;
+                                }
+                                if (feature.properties.difficulty) {
+                                    popupContent += `<small>Difficulty: ${feature.properties.difficulty}</small><br>`;
+                                }
+                                if (feature.properties.length) {
+                                    popupContent += `<small>Length: ${feature.properties.length} km</small><br>`;
+                                }
+                                if (feature.geometry && feature.geometry.type) {
+                                    popupContent += `<small>Type: ${feature.geometry.type}</small>`;
+                                }
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                // Handle single Feature
+                else if (geoJsonData.type === 'Feature') {
+                    geoJsonLayer = L.geoJSON(geoJsonData, {
+                        style: {
+                            color: '#667eea',
+                            weight: 3,
+                            opacity: 0.8,
+                            fillOpacity: 0.3,
+                            fillColor: '#667eea'
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div style="max-width: 200px;">';
+                                if (feature.properties.name) {
+                                    popupContent += `<strong>${feature.properties.name}</strong><br>`;
+                                }
+                                if (feature.properties.description) {
+                                    popupContent += `${feature.properties.description}<br>`;
+                                }
+                                if (feature.properties.difficulty) {
+                                    popupContent += `<small>Difficulty: ${feature.properties.difficulty}</small><br>`;
+                                }
+                                if (feature.properties.length) {
+                                    popupContent += `<small>Length: ${feature.properties.length} km</small><br>`;
+                                }
+                                if (feature.geometry && feature.geometry.type) {
+                                    popupContent += `<small>Type: ${feature.geometry.type}</small>`;
+                                }
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                // Handle Geometry object
+                else if (geoJsonData.type && geoJsonData.coordinates) {
+                    const feature = {
+                        type: 'Feature',
+                        geometry: geoJsonData,
+                        properties: {}
+                    };
+                    geoJsonLayer = L.geoJSON(feature, {
+                        style: {
+                            color: '#667eea',
+                            weight: 3,
+                            opacity: 0.8,
+                            fillOpacity: 0.3,
+                            fillColor: '#667eea'
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                else {
+                    throw new Error('Invalid GeoJSON format. Expected FeatureCollection, Feature, or Geometry object.');
+                }
+
+                // Enable clear button
+                document.getElementById('clearMapBtn').disabled = false;
+            } catch (error) {
+                errorDiv.textContent = `Error displaying GeoJSON: ${error.message}`;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        // Clear map
+        function clearMap() {
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+                geoJsonLayer = null;
+            }
+            document.getElementById('geojsonFile').value = '';
+            document.getElementById('clearMapBtn').disabled = true;
+            
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+
+            // Clear trail selection
+            if (trailListComponent) {
+                trailListComponent.clearSelection();
+            }
+        }
+
         // Initialize on page load
         window.onload = function() {
             loadConfig();
+            initializeMap();
+            
+            // Initialize Trail List Component
+            if (typeof TrailListComponent !== 'undefined') {
+                trailListComponent = new TrailListComponent(API_BASE_URL, map, displayGeoJSON);
+                trailListComponent.loadTrails();
+            }
             
             // Wait for Google API to load
             const checkGoogle = setInterval(() => {

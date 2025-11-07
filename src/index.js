@@ -4,7 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import dotenv from 'dotenv';
-import userRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userAuthRoutes.js';
+import guideRoutes from './routes/guideAuthRoutes.js';
+import trailRoutes from './routes/trailRoutes.js';
 
 dotenv.config();
 
@@ -25,11 +27,20 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve docs directory
+app.use('/docs', express.static(path.join(__dirname, '../docs')));
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.use("/api/auth", userRoutes)
+app.get('/api-docs', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
+});
+
+app.use("/api/auth/user", userRoutes);
+app.use("/api/auth/guide", guideRoutes);
+app.use("/api/trails", trailRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
