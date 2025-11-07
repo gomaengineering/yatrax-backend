@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YatraX - Google Sign In Test</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
             margin: 0;
@@ -15,10 +17,15 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .container {
@@ -26,9 +33,16 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 500px;
             width: 100%;
             text-align: center;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            width: 100%;
         }
 
         h1 {
@@ -199,9 +213,130 @@
             font-size: 13px;
             color: #555;
         }
+
+        /* Map Section Styles */
+        .map-section {
+            margin-top: 20px;
+        }
+
+        .map-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .file-upload-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .file-upload-section h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .file-input-wrapper input[type="file"]:hover {
+            border-color: #5568d3;
+            background: #f8f9fa;
+        }
+
+        .map-wrapper {
+            width: 100%;
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #ddd;
+            margin-top: 20px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-info {
+            background: #e8f5e9;
+            border-left: 4px solid #2e7d32;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .map-error {
+            background: #ffebee;
+            border-left: 4px solid #c62828;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: left;
+            font-size: 13px;
+            color: #c62828;
+            display: none;
+        }
+
+        .map-error.show {
+            display: block;
+        }
+
+        .clear-map-btn {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .clear-map-btn:hover {
+            background: #d32f2f;
+        }
+
+        .clear-map-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (min-width: 768px) {
+            .main-wrapper {
+                flex-direction: row;
+            }
+            .container {
+                max-width: 500px;
+            }
+            .map-container {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="main-wrapper">
     <div class="container">
         <h1>🚀 YatraX Backend</h1>
         <p class="subtitle">Google Sign-In Test Page</p>
@@ -264,10 +399,42 @@
         </div>
     </div>
 
+    <div class="map-container">
+        <div class="map-section">
+            <h2>🗺️ GeoJSON Map Viewer</h2>
+            
+            <div class="map-info">
+                <strong>📝 Instructions:</strong><br>
+                1. Upload a GeoJSON file (.json or .geojson)<br>
+                2. The coordinates will be automatically plotted on the map<br>
+                3. Supports Point, LineString, Polygon, and FeatureCollection formats
+            </div>
+
+            <div class="file-upload-section">
+                <h3>📁 Upload GeoJSON File</h3>
+                <div class="file-input-wrapper">
+                    <input type="file" id="geojsonFile" accept=".json,.geojson" />
+                </div>
+                <button class="clear-map-btn" id="clearMapBtn" onclick="clearMap()" disabled>Clear Map</button>
+            </div>
+
+            <div class="map-error" id="mapError"></div>
+
+            <div class="map-wrapper">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         let GOOGLE_CLIENT_ID = '';
         let API_BASE_URL = 'http://localhost:3000';
+        let map = null;
+        let geoJsonLayer = null;
 
         // Load saved configuration from localStorage
         function loadConfig() {
@@ -358,7 +525,7 @@
 
             try {
                 // Send the ID token to your backend
-                const backendResponse = await fetch(`${API_BASE_URL}/api/auth/google-login`, {
+                const backendResponse = await fetch(`${API_BASE_URL}/api/auth/user/google-login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -379,7 +546,9 @@
 
                     // Display user info
                     if (data.user) {
-                        document.getElementById('userName').textContent = `${data.user.FirstName} ${data.user.LastName}`;
+                        const firstName = data.user.firstName || data.user.FirstName || '';
+                        const lastName = data.user.lastName || data.user.LastName || '';
+                        document.getElementById('userName').textContent = `${firstName} ${lastName}`.trim() || 'User';
                         document.getElementById('userEmail').textContent = data.user.email;
                         document.getElementById('userRole').textContent = data.user.role;
                         document.getElementById('userToken').textContent = data.token;
@@ -399,9 +568,174 @@
             }
         }
 
+        // Initialize Map
+        function initializeMap() {
+            // Default center (Nepal - common trekking area)
+            map = L.map('map').setView([28.3949, 84.1240], 7);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Handle GeoJSON file upload
+        document.getElementById('geojsonFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const geoJsonData = JSON.parse(event.target.result);
+                    displayGeoJSON(geoJsonData);
+                } catch (error) {
+                    errorDiv.textContent = `Error parsing GeoJSON: ${error.message}`;
+                    errorDiv.classList.add('show');
+                }
+            };
+
+            reader.onerror = function() {
+                errorDiv.textContent = 'Error reading file. Please try again.';
+                errorDiv.classList.add('show');
+            };
+
+            reader.readAsText(file);
+        });
+
+        // Display GeoJSON on map
+        function displayGeoJSON(geoJsonData) {
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+
+            // Clear existing layer
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+            }
+
+            try {
+                // Validate GeoJSON structure
+                if (!geoJsonData) {
+                    throw new Error('Invalid GeoJSON: Empty data');
+                }
+
+                // Handle FeatureCollection
+                if (geoJsonData.type === 'FeatureCollection' && geoJsonData.features) {
+                    geoJsonLayer = L.geoJSON(geoJsonData, {
+                        style: function(feature) {
+                            return {
+                                color: '#667eea',
+                                weight: 3,
+                                opacity: 0.8,
+                                fillOpacity: 0.3,
+                                fillColor: '#667eea'
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div style="max-width: 200px;">';
+                                if (feature.properties.name) {
+                                    popupContent += `<strong>${feature.properties.name}</strong><br>`;
+                                }
+                                if (feature.properties.description) {
+                                    popupContent += `${feature.properties.description}<br>`;
+                                }
+                                if (feature.geometry && feature.geometry.type) {
+                                    popupContent += `<small>Type: ${feature.geometry.type}</small>`;
+                                }
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                // Handle single Feature
+                else if (geoJsonData.type === 'Feature') {
+                    geoJsonLayer = L.geoJSON(geoJsonData, {
+                        style: {
+                            color: '#667eea',
+                            weight: 3,
+                            opacity: 0.8,
+                            fillOpacity: 0.3,
+                            fillColor: '#667eea'
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div style="max-width: 200px;">';
+                                if (feature.properties.name) {
+                                    popupContent += `<strong>${feature.properties.name}</strong><br>`;
+                                }
+                                if (feature.properties.description) {
+                                    popupContent += `${feature.properties.description}<br>`;
+                                }
+                                if (feature.geometry && feature.geometry.type) {
+                                    popupContent += `<small>Type: ${feature.geometry.type}</small>`;
+                                }
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                // Handle Geometry object
+                else if (geoJsonData.type && geoJsonData.coordinates) {
+                    const feature = {
+                        type: 'Feature',
+                        geometry: geoJsonData,
+                        properties: {}
+                    };
+                    geoJsonLayer = L.geoJSON(feature, {
+                        style: {
+                            color: '#667eea',
+                            weight: 3,
+                            opacity: 0.8,
+                            fillOpacity: 0.3,
+                            fillColor: '#667eea'
+                        }
+                    }).addTo(map);
+
+                    // Fit map to bounds
+                    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
+                }
+                else {
+                    throw new Error('Invalid GeoJSON format. Expected FeatureCollection, Feature, or Geometry object.');
+                }
+
+                // Enable clear button
+                document.getElementById('clearMapBtn').disabled = false;
+            } catch (error) {
+                errorDiv.textContent = `Error displaying GeoJSON: ${error.message}`;
+                errorDiv.classList.add('show');
+            }
+        }
+
+        // Clear map
+        function clearMap() {
+            if (geoJsonLayer) {
+                map.removeLayer(geoJsonLayer);
+                geoJsonLayer = null;
+            }
+            document.getElementById('geojsonFile').value = '';
+            document.getElementById('clearMapBtn').disabled = true;
+            
+            const errorDiv = document.getElementById('mapError');
+            errorDiv.classList.remove('show');
+        }
+
         // Initialize on page load
         window.onload = function() {
             loadConfig();
+            initializeMap();
             
             // Wait for Google API to load
             const checkGoogle = setInterval(() => {
