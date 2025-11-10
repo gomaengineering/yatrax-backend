@@ -270,6 +270,7 @@
                     <li><a href="#user-auth">User Authentication APIs</a></li>
                     <li><a href="#guide-auth">Guide Authentication APIs</a></li>
                     <li><a href="#trail-apis">Trail & GeoJSON APIs</a></li>
+                    <li><a href="#admin-apis">Admin APIs</a></li>
                 </ul>
             </div>
 
@@ -1300,6 +1301,512 @@
                 </div>
             </div>
 
+            <!-- Admin APIs Section -->
+            <div class="section" id="admin-apis">
+                <h2 class="section-title">👑 Admin APIs</h2>
+                <div class="api-card" style="background: #fff3cd; border-left-color: #ffc107;">
+                    <div class="description">
+                        <strong>⚠️ Important:</strong> All admin routes require authentication with a JWT token and admin role. 
+                        Include the token in the Authorization header: <code>Authorization: Bearer &lt;token&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Admin Login -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/auth/login</span>
+                    </div>
+                    <div class="description">
+                        Admin login. Supports admin accounts from both User and Guide models.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>email</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Admin email address</td>
+                                    </tr>
+                                    <tr>
+                                        <td>password</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Admin password</td>
+                                    </tr>
+                                    <tr>
+                                        <td>userType</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>"user" or "guide" (default: tries both)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Admin login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "admin": {
+    "id": "507f1f77bcf86cd799439011",
+    "firstName": "Admin",
+    "lastName": "User",
+    "email": "admin@example.com",
+    "role": "admin",
+    "type": "user"
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Admin Profile -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/auth/profile</span>
+                    </div>
+                    <div class="description">
+                        Get the authenticated admin's profile information.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Headers</div>
+                            <div class="code-block">Authorization: Bearer &lt;token&gt;</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get All Users (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/users</span>
+                    </div>
+                    <div class="description">
+                        Get all users with pagination, filtering, and search capabilities.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>page</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Page number (default: 1)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>limit</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Items per page (default: 10)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>role</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by role: "user", "porter", "admin"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>subscription</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by subscription: "free", "premium"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>search</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Search in firstName, lastName, email</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sortBy</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Sort field (default: "createdAt")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sortOrder</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>"asc" or "desc" (default: "desc")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 10,
+  "total": 150,
+  "page": 1,
+  "pages": 15,
+  "users": [...]
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get User by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific user by ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td>User MongoDB ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/users</span>
+                    </div>
+                    <div class="description">
+                        Create a new user account (admin only).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>firstName</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's first name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>lastName</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's last name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>email</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's email address</td>
+                                    </tr>
+                                    <tr>
+                                        <td>password</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User password (min 8 characters)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>country</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>User's country</td>
+                                    </tr>
+                                    <tr>
+                                        <td>role</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>User role (default: "user")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>subscription</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Subscription type (default: "free")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing user. All fields are optional.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="description">All fields are optional. Only include fields you want to update.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a user by ID. Cannot delete your own admin account.
+                    </div>
+                </div>
+
+                <!-- Get All Guides (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/guides</span>
+                    </div>
+                    <div class="description">
+                        Get all guides with pagination, filtering, and search capabilities.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <div class="description">Similar to users endpoint: page, limit, role, search, sortBy, sortOrder</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Guide by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific guide by ID.
+                    </div>
+                </div>
+
+                <!-- Create Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/guides</span>
+                    </div>
+                    <div class="description">
+                        Create a new guide account (admin only). Requires all guide fields.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="description">
+                                Required fields: firstName, lastName, email, password, description, TBNumber, 
+                                trekAreas (array), experience, education, languages (array), ratePerDay, certifications (array)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing guide. All fields are optional.
+                    </div>
+                </div>
+
+                <!-- Delete Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a guide by ID. Cannot delete your own admin account.
+                    </div>
+                </div>
+
+                <!-- Get All Trails (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trails</span>
+                    </div>
+                    <div class="description">
+                        Get all trails with admin-specific filters and pagination.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <div class="description">
+                                Supports: page, limit, isActive, guideId, difficulty, search, sortBy, sortOrder
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Trail by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific trail by ID.
+                    </div>
+                </div>
+
+                <!-- Create Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/trails</span>
+                    </div>
+                    <div class="description">
+                        Create a new trail with GeoJSON data (admin only).
+                    </div>
+                </div>
+
+                <!-- Update Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing trail. All fields are optional.
+                    </div>
+                </div>
+
+                <!-- Delete Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a trail by ID.
+                    </div>
+                </div>
+
+                <!-- Get Dashboard Statistics -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/stats/dashboard</span>
+                    </div>
+                    <div class="description">
+                        Get comprehensive dashboard statistics including user counts, guide counts, trail counts, 
+                        recent activity, and breakdowns by various categories.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "stats": {
+    "overview": {
+      "totalUsers": 150,
+      "totalGuides": 45,
+      "totalTrails": 120,
+      "activeUsers": 30,
+      "activeGuides": 40,
+      "activeTrails": 115
+    },
+    "recentActivity": {
+      "recentUsers": 15,
+      "recentGuides": 5,
+      "recentTrails": 10,
+      "period": "last 30 days"
+    },
+    "breakdowns": {
+      "usersByRole": {
+        "user": 120,
+        "porter": 20,
+        "admin": 10
+      },
+      "usersBySubscription": {
+        "free": 100,
+        "premium": 50
+      },
+      "trailsByDifficulty": {
+        "easy": 30,
+        "moderate": 50,
+        "hard": 30,
+        "expert": 10
+      },
+      "guidesByExperience": [...]
+    }
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Common Error Responses -->
             <div class="section">
                 <h2 class="section-title">⚠️ Common Error Responses</h2>
@@ -1340,6 +1847,18 @@
                     <div class="code-block">Authorization: Bearer &lt;your-jwt-token&gt;</div>
                     <div class="description" style="margin-top: 15px;">
                         <strong>Token Expiration:</strong> Tokens expire after 7 days (configurable via JWT_EXPIRES_IN environment variable).
+                    </div>
+                    <div class="description" style="margin-top: 15px;">
+                        <strong>Admin Routes:</strong> Admin APIs require both authentication (JWT token) and admin role. 
+                        Use <code>/api/admin/auth/login</code> to login as admin. Admin accounts can exist in both User and Guide models.
+                    </div>
+                    <div class="description" style="margin-top: 15px;">
+                        <strong>Role-Based Access:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>User routes:</strong> Available to all authenticated users</li>
+                            <li><strong>Guide routes:</strong> Available to guides and admins</li>
+                            <li><strong>Admin routes:</strong> Only accessible to users with admin role</li>
+                        </ul>
                     </div>
                 </div>
             </div>

@@ -7,6 +7,11 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/userAuthRoutes.js';
 import guideRoutes from './routes/guideAuthRoutes.js';
 import trailRoutes from './routes/trailRoutes.js';
+import adminAuthRoutes from './routes/adminAuthRoutes.js';
+import adminUserRoutes from './routes/adminUserRoutes.js';
+import adminGuideRoutes from './routes/adminGuideRoutes.js';
+import adminTrailRoutes from './routes/adminTrailRoutes.js';
+import adminStatsRoutes from './routes/adminStatsRoutes.js';
 
 dotenv.config();
 
@@ -41,6 +46,13 @@ app.get('/api-docs', (req, res) => {
 app.use("/api/auth/user", userRoutes);
 app.use("/api/auth/guide", guideRoutes);
 app.use("/api/trails", trailRoutes);
+
+// Admin Routes
+app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/guides", adminGuideRoutes);
+app.use("/api/admin/trails", adminTrailRoutes);
+app.use("/api/admin/stats", adminStatsRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
