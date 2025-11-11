@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YatraX - Google Sign In Test</title>
+    <title>YatraX - Admin</title>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -390,6 +390,7 @@
             cursor: not-allowed;
         }
 
+
         @media (min-width: 768px) {
             .top-section {
                 flex-direction: row;
@@ -689,7 +690,12 @@
                     <div class="file-input-wrapper">
                         <input type="file" id="geojsonFile" accept=".json,.geojson" />
                     </div>
-                    <button class="clear-map-btn" id="clearMapBtn" onclick="clearMap()" disabled>Clear Map</button>
+                    <div style="margin-top: 10px;">
+                        <button class="clear-map-btn" id="clearMapBtn" onclick="clearMap()" disabled>Clear Map</button>
+                    </div>
+                    <div class="map-info" style="margin-top: 15px; font-size: 12px;">
+                        <strong>ℹ️ Note:</strong> GeoJSON files will be automatically saved to the database. Make sure your GeoJSON includes a "name" field in the properties.
+                    </div>
                 </div>
 
                 <div class="map-error" id="mapError"></div>
@@ -889,7 +895,7 @@
         }
 
         // Handle GeoJSON file upload
-        document.getElementById('geojsonFile').addEventListener('change', function(e) {
+        document.getElementById('geojsonFile').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -897,12 +903,17 @@
             errorDiv.classList.remove('show');
 
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = async function(event) {
                 try {
                     const geoJsonData = JSON.parse(event.target.result);
+                    
+                    // Display on map first
                     displayGeoJSON(geoJsonData);
+                    
+                    // Automatically save to database
+                    await saveGeoJSONToDatabase(geoJsonData);
                 } catch (error) {
-                    errorDiv.textContent = `Error parsing GeoJSON: ${error.message}`;
+                    errorDiv.textContent = `Error processing GeoJSON: ${error.message}`;
                     errorDiv.classList.add('show');
                 }
             };
@@ -1054,6 +1065,143 @@
             // Clear trail selection
             if (trailListComponent) {
                 trailListComponent.clearSelection();
+            }
+        }
+
+        // Save GeoJSON directly to database
+        async function saveGeoJSONToDatabase(geoJsonData) {
+            const errorDiv = document.getElementById('mapError');
+            
+            try {
+                // Debug: Log the incoming GeoJSON structure
+                console.log('Processing GeoJSON:', JSON.stringify(geoJsonData, null, 2));
+                
+                // Extract geometry and properties from GeoJSON
+                let geometry = null;
+                let properties = {};
+                let feature = null;
+
+                if (geoJsonData.type === 'Feature') {
+                    feature = geoJsonData;
+                    geometry = geoJsonData.geometry;
+                    properties = geoJsonData.properties || {};
+                } else if (geoJsonData.type === 'FeatureCollection' && geoJsonData.features && geoJsonData.features.length > 0) {
+                    // If FeatureCollection, use first feature
+                    feature = geoJsonData.features[0];
+                    geometry = feature.geometry;
+                    properties = feature.properties || {};
+                } else if (geoJsonData.type && geoJsonData.coordinates) {
+                    // Direct geometry object
+                    geometry = geoJsonData;
+                    properties = {};
+                } else {
+                    throw new Error('Invalid GeoJSON format. Expected Feature, FeatureCollection, or Geometry object.');
+                }
+
+                if (!geometry) {
+                    throw new Error('Could not extract geometry from GeoJSON.');
+                }
+
+                // Extract name - check top-level first (as per API docs), then properties
+                let name = null;
+                if (feature) {
+                    // Check top-level of Feature first (matches API documentation format)
+                    name = feature.name || feature.Name || feature.NAME;
+                }
+                // Fall back to properties if not found at top level
+                if (!name) {
+                    name = properties.name || properties.Name || properties.NAME;
+                }
+                // Last resort: use feature ID if available
+                if (!name && feature && feature.id) {
+                    name = feature.id;
+                }
+
+                // Debug: Log extracted name
+                console.log('Extracted name:', name);
+                console.log('Feature object:', feature);
+                console.log('Properties object:', properties);
+
+                // Validate name is present
+                if (!name || name.trim() === '') {
+                    throw new Error('GeoJSON must include a "name" field. It can be at the top level (e.g., {"name": "Trail Name"}) or in properties (e.g., {"properties": {"name": "Trail Name"}}).');
+                }
+
+                // Helper function to get value from top-level or properties
+                const getValue = (fieldName, defaultValue = undefined) => {
+                    if (feature && feature[fieldName] !== undefined) {
+                        return feature[fieldName];
+                    }
+                    const propValue = properties[fieldName] || properties[fieldName.charAt(0).toUpperCase() + fieldName.slice(1)];
+                    return propValue !== undefined ? propValue : defaultValue;
+                };
+
+                // Build trail data - check top-level fields first, then properties
+                const description = getValue('description');
+                const difficulty = getValue('difficulty');
+                const lengthValue = getValue('length');
+                const elevationValue = getValue('elevation');
+                const isActiveValue = getValue('isActive', true);
+
+                const trailData = {
+                    name: name,
+                    description: description,
+                    type: 'Feature',
+                    geometry: geometry,
+                    properties: properties, // Preserve all original properties
+                    difficulty: difficulty,
+                    length: lengthValue ? (typeof lengthValue === 'number' ? lengthValue : parseFloat(lengthValue)) : undefined,
+                    elevation: elevationValue ? (typeof elevationValue === 'number' ? elevationValue : parseInt(elevationValue)) : undefined,
+                    isActive: isActiveValue !== undefined ? isActiveValue : true
+                };
+
+                // Remove undefined values
+                Object.keys(trailData).forEach(key => {
+                    if (trailData[key] === undefined) {
+                        delete trailData[key];
+                    }
+                });
+
+                // Send to backend API
+                const response = await fetch(`${API_BASE_URL}/api/trails`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(trailData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Show success message
+                    errorDiv.textContent = `✅ Trail "${trailData.name}" saved successfully to database!`;
+                    errorDiv.style.background = '#d1fae5';
+                    errorDiv.style.color = '#065f46';
+                    errorDiv.style.borderLeft = '4px solid #10b981';
+                    errorDiv.classList.add('show');
+                    
+                    // Refresh trail list
+                    if (trailListComponent) {
+                        setTimeout(() => {
+                            trailListComponent.loadTrails();
+                        }, 1000);
+                    }
+
+                    // Clear success message after 5 seconds
+                    setTimeout(() => {
+                        errorDiv.classList.remove('show');
+                    }, 5000);
+                } else {
+                    throw new Error(data.message || data.error || 'Failed to save trail');
+                }
+            } catch (error) {
+                console.error('Error saving trail:', error);
+                errorDiv.textContent = `❌ Error saving trail: ${error.message}`;
+                errorDiv.style.background = '#fee2e2';
+                errorDiv.style.color = '#991b1b';
+                errorDiv.style.borderLeft = '4px solid #ef4444';
+                errorDiv.classList.add('show');
             }
         }
 

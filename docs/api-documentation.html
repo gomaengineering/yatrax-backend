@@ -270,6 +270,7 @@
                     <li><a href="#user-auth">User Authentication APIs</a></li>
                     <li><a href="#guide-auth">Guide Authentication APIs</a></li>
                     <li><a href="#trail-apis">Trail & GeoJSON APIs</a></li>
+                    <li><a href="#admin-apis">Admin APIs</a></li>
                 </ul>
             </div>
 
@@ -843,10 +844,10 @@
                             </table>
                         </div>
                         <div class="detail-section">
-                            <div class="detail-title">Request Example</div>
+                            <div class="detail-title">Request Example (Point Geometry)</div>
                             <div class="code-block json">{
   "name": "Everest Base Camp Trail",
-  "description": "Classic trek to Everest Base Camp",
+  "description": "Classic trek to Everest Base Camp starting point",
   "type": "Feature",
   "geometry": {
     "type": "Point",
@@ -854,12 +855,57 @@
   },
   "properties": {
     "name": "Everest Base Camp",
-    "region": "Khumbu"
+    "region": "Khumbu",
+    "altitude": "5364m",
+    "season": "Spring/Autumn"
   },
   "difficulty": "hard",
   "length": 130,
-  "elevation": 5364
+  "elevation": 5364,
+  "guideId": "507f1f77bcf86cd799439012"
 }</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example (LineString Geometry)</div>
+                            <div class="code-block json">{
+  "name": "Annapurna Circuit Trail",
+  "description": "Complete trekking route around Annapurna massif",
+  "type": "Feature",
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [84.3294, 28.2096],
+      [84.3500, 28.2200],
+      [84.3700, 28.2300],
+      [84.3900, 28.2400]
+    ]
+  },
+  "properties": {
+    "region": "Annapurna",
+    "permits_required": ["ACAP", "TIMS"],
+    "best_months": ["March", "April", "May", "October", "November"]
+  },
+  "difficulty": "moderate",
+  "length": 230,
+  "elevation": 5416,
+  "guideId": "507f1f77bcf86cd799439012"
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X POST http://localhost:3000/api/trails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Trail",
+    "description": "A test trail for API testing",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [85.3240, 27.7172]
+    },
+    "difficulty": "easy",
+    "length": 5.5,
+    "elevation": 1400
+  }'</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
@@ -874,7 +920,7 @@
   "trail": {
     "_id": "507f1f77bcf86cd799439013",
     "name": "Everest Base Camp Trail",
-    "description": "Classic trek to Everest Base Camp",
+    "description": "Classic trek to Everest Base Camp starting point",
     "type": "Feature",
     "geometry": {
       "type": "Point",
@@ -882,15 +928,33 @@
     },
     "properties": {
       "name": "Everest Base Camp",
-      "region": "Khumbu"
+      "region": "Khumbu",
+      "altitude": "5364m",
+      "season": "Spring/Autumn"
     },
     "difficulty": "hard",
     "length": 130,
     "elevation": 5364,
+    "guideId": "507f1f77bcf86cd799439012",
     "isActive": true,
-    "createdAt": "2023-11-06T10:30:00.000Z",
-    "updatedAt": "2023-11-06T10:30:00.000Z"
+    "createdAt": "2024-11-10T10:30:00.000Z",
+    "updatedAt": "2024-11-10T10:30:00.000Z"
   }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Error Response Examples</div>
+                            <div class="code-block json">// 400 Bad Request - Missing required fields
+{
+  "success": false,
+  "message": "Name and geometry are required"
+}
+
+// 400 Bad Request - Validation Error
+{
+  "success": false,
+  "message": "Validation error",
+  "error": "Trail validation failed: difficulty: `invalid` is not a valid enum value for path `difficulty`."
 }</div>
                         </div>
                     </div>
@@ -952,8 +1016,26 @@
                             </table>
                         </div>
                         <div class="detail-section">
-                            <div class="detail-title">Request Example</div>
-                            <div class="code-block">GET /api/trails?page=1&limit=10&difficulty=hard&isActive=true</div>
+                            <div class="detail-title">Request Examples</div>
+                            <div class="code-block">// Get all active trails
+GET /api/trails?isActive=true
+
+// Get trails with pagination
+GET /api/trails?page=1&limit=10
+
+// Filter by difficulty
+GET /api/trails?difficulty=hard&isActive=true
+
+// Filter by guide
+GET /api/trails?guideId=507f1f77bcf86cd799439012
+
+// Combined filters
+GET /api/trails?page=1&limit=5&difficulty=moderate&isActive=true</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET "http://localhost:3000/api/trails?page=1&limit=5&difficulty=moderate" \
+  -H "Accept: application/json"</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
@@ -966,18 +1048,52 @@
   "count": 2,
   "total": 25,
   "page": 1,
-  "pages": 3,
+  "pages": 13,
   "trails": [
     {
       "_id": "507f1f77bcf86cd799439013",
       "name": "Everest Base Camp Trail",
+      "description": "Classic trek to Everest Base Camp starting point",
       "type": "Feature",
       "geometry": {
         "type": "Point",
         "coordinates": [86.9250, 27.9881]
       },
+      "properties": {
+        "name": "Everest Base Camp",
+        "region": "Khumbu"
+      },
       "difficulty": "hard",
-      "isActive": true
+      "length": 130,
+      "elevation": 5364,
+      "guideId": {
+        "_id": "507f1f77bcf86cd799439012",
+        "firstName": "Sherpa",
+        "lastName": "Tenzing",
+        "email": "tenzing@example.com"
+      },
+      "isActive": true,
+      "createdAt": "2024-11-10T10:30:00.000Z",
+      "updatedAt": "2024-11-10T10:30:00.000Z"
+    },
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "name": "Annapurna Circuit Trail",
+      "description": "Complete trekking route around Annapurna massif",
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [84.3294, 28.2096],
+          [84.3500, 28.2200],
+          [84.3700, 28.2300]
+        ]
+      },
+      "difficulty": "moderate",
+      "length": 230,
+      "elevation": 5416,
+      "isActive": true,
+      "createdAt": "2024-11-09T15:20:00.000Z"
     }
   ]
 }</div>
@@ -1210,6 +1326,108 @@
                     </div>
                 </div>
 
+                <!-- Find Trails Intersecting -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/trails/intersecting</span>
+                    </div>
+                    <div class="description">
+                        Find trails that intersect with a specified geometry (Point, LineString, Polygon, etc.).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>geometry</td>
+                                        <td>Object</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>GeoJSON geometry object (Point, LineString, Polygon, etc.)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block json">{
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [84.0, 28.0],
+      [85.0, 28.5],
+      [86.0, 29.0]
+    ]
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X POST http://localhost:3000/api/trails/intersecting \
+  -H "Content-Type: application/json" \
+  -d '{
+    "geometry": {
+      "type": "Point",
+      "coordinates": [85.3240, 27.7172]
+    }
+  }'</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">// 200 OK - Success Response
+{
+  "success": true,
+  "count": 1,
+  "trails": [
+    {
+      "_id": "507f1f77bcf86cd799439018",
+      "name": "Kathmandu Valley Rim Trail",
+      "description": "Trail around Kathmandu valley rim",
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [85.2000, 27.6000],
+          [85.4000, 27.8000],
+          [85.6000, 28.0000]
+        ]
+      },
+      "difficulty": "moderate",
+      "length": 45,
+      "elevation": 2500,
+      "isActive": true,
+      "guideId": {
+        "firstName": "Maya",
+        "lastName": "Sherpa",
+        "email": "maya@example.com"
+      }
+    }
+  ]
+}
+
+// 400 Bad Request - Invalid geometry
+{
+  "success": false,
+  "message": "Valid GeoJSON geometry is required in request body"
+}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Update Trail -->
                 <div class="api-card">
                     <div class="api-header">
@@ -1298,6 +1516,616 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- API Testing Guide -->
+                <div class="api-card" style="background: #e8f5e8; border-left-color: #10b981;">
+                    <div class="api-header">
+                        <span style="font-size: 20px; font-weight: bold;">🧪 Trail API Testing Guide</span>
+                    </div>
+                    <div class="description">
+                        <strong>Complete testing workflow for Trail APIs with sample data</strong>
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Step 1: Create Test Trails</div>
+                            <div class="code-block">// Create a Point trail (Everest Base Camp)
+curl -X POST http://localhost:3000/api/trails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Everest Base Camp",
+    "description": "Iconic trek to Everest Base Camp",
+    "geometry": {"type": "Point", "coordinates": [86.9250, 27.9881]},
+    "difficulty": "hard",
+    "length": 130,
+    "elevation": 5364
+  }'
+
+// Create a LineString trail (Annapurna Circuit)
+curl -X POST http://localhost:3000/api/trails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Annapurna Circuit",
+    "description": "Complete circuit around Annapurna massif",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [[84.3294, 28.2096], [84.3500, 28.2200], [84.3700, 28.2300]]
+    },
+    "difficulty": "moderate",
+    "length": 230,
+    "elevation": 5416
+  }'</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Step 2: Test CRUD Operations</div>
+                            <div class="code-block">// Get all trails
+curl -X GET http://localhost:3000/api/trails
+
+// Get specific trail (replace ID with actual ID from step 1)
+curl -X GET http://localhost:3000/api/trails/TRAIL_ID_HERE
+
+// Update trail
+curl -X PUT http://localhost:3000/api/trails/TRAIL_ID_HERE \
+  -H "Content-Type: application/json" \
+  -d '{"description": "Updated description", "difficulty": "expert"}'
+
+// Delete trail
+curl -X DELETE http://localhost:3000/api/trails/TRAIL_ID_HERE</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Step 3: Test Geospatial Queries</div>
+                            <div class="code-block">// Find trails near Kathmandu (within 50km)
+curl -X GET "http://localhost:3000/api/trails/near/point?longitude=85.3240&latitude=27.7172&maxDistance=50000"
+
+// Find trails within radius of Pokhara (25km)
+curl -X GET "http://localhost:3000/api/trails/within/radius?longitude=83.9856&latitude=28.2096&radius=25"
+
+// Find trails within polygon (Kathmandu Valley area)
+curl -X POST http://localhost:3000/api/trails/within/polygon \
+  -H "Content-Type: application/json" \
+  -d '{
+    "polygon": {
+      "type": "Polygon",
+      "coordinates": [[[85.0, 27.5], [85.5, 27.5], [85.5, 28.0], [85.0, 28.0], [85.0, 27.5]]]
+    }
+  }'
+
+// Find trails intersecting with a line
+curl -X POST http://localhost:3000/api/trails/intersecting \
+  -H "Content-Type: application/json" \
+  -d '{
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [[84.0, 28.0], [87.0, 28.5]]
+    }
+  }'</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Step 4: Test Filtering & Pagination</div>
+                            <div class="code-block">// Filter by difficulty
+curl -X GET "http://localhost:3000/api/trails?difficulty=moderate"
+
+// Pagination
+curl -X GET "http://localhost:3000/api/trails?page=1&limit=5"
+
+// Combined filters
+curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page=1&limit=10"</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Expected Response Codes</div>
+                            <div class="code-block">✅ 200 OK - Successful GET, PUT, DELETE operations
+✅ 201 Created - Successful POST (create) operations
+❌ 400 Bad Request - Invalid data, missing required fields
+❌ 404 Not Found - Trail not found (GET, PUT, DELETE by ID)
+❌ 500 Server Error - Database or server issues</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin APIs Section -->
+            <div class="section" id="admin-apis">
+                <h2 class="section-title">👑 Admin APIs</h2>
+                <div class="api-card" style="background: #fff3cd; border-left-color: #ffc107;">
+                    <div class="description">
+                        <strong>⚠️ Important:</strong> All admin routes require authentication with a JWT token and admin role. 
+                        Include the token in the Authorization header: <code>Authorization: Bearer &lt;token&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Admin Login -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/auth/login</span>
+                    </div>
+                    <div class="description">
+                        Admin login. Supports admin accounts from both User and Guide models.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>email</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Admin email address</td>
+                                    </tr>
+                                    <tr>
+                                        <td>password</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Admin password</td>
+                                    </tr>
+                                    <tr>
+                                        <td>userType</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>"user" or "guide" (default: tries both)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Admin login successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "admin": {
+    "id": "507f1f77bcf86cd799439011",
+    "firstName": "Admin",
+    "lastName": "User",
+    "email": "admin@example.com",
+    "role": "admin",
+    "type": "user"
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Admin Profile -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/auth/profile</span>
+                    </div>
+                    <div class="description">
+                        Get the authenticated admin's profile information.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Headers</div>
+                            <div class="code-block">Authorization: Bearer &lt;token&gt;</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get All Users (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/users</span>
+                    </div>
+                    <div class="description">
+                        Get all users with pagination, filtering, and search capabilities.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>page</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Page number (default: 1)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>limit</td>
+                                        <td>Number</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Items per page (default: 10)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>role</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by role: "user", "porter", "admin"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>subscription</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by subscription: "free", "premium"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>search</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Search in firstName, lastName, email</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sortBy</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Sort field (default: "createdAt")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sortOrder</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>"asc" or "desc" (default: "desc")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 10,
+  "total": 150,
+  "page": 1,
+  "pages": 15,
+  "users": [...]
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get User by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific user by ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td>User MongoDB ID</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/users</span>
+                    </div>
+                    <div class="description">
+                        Create a new user account (admin only).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>firstName</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's first name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>lastName</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's last name</td>
+                                    </tr>
+                                    <tr>
+                                        <td>email</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User's email address</td>
+                                    </tr>
+                                    <tr>
+                                        <td>password</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>User password (min 8 characters)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>country</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>User's country</td>
+                                    </tr>
+                                    <tr>
+                                        <td>role</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>User role (default: "user")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>subscription</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Subscription type (default: "free")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing user. All fields are optional.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="description">All fields are optional. Only include fields you want to update.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete User (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/users/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a user by ID. Cannot delete your own admin account.
+                    </div>
+                </div>
+
+                <!-- Get All Guides (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/guides</span>
+                    </div>
+                    <div class="description">
+                        Get all guides with pagination, filtering, and search capabilities.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <div class="description">Similar to users endpoint: page, limit, role, search, sortBy, sortOrder</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Guide by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific guide by ID.
+                    </div>
+                </div>
+
+                <!-- Create Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/guides</span>
+                    </div>
+                    <div class="description">
+                        Create a new guide account (admin only). Requires all guide fields.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="description">
+                                Required fields: firstName, lastName, email, password, description, TBNumber, 
+                                trekAreas (array), experience, education, languages (array), ratePerDay, certifications (array)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing guide. All fields are optional.
+                    </div>
+                </div>
+
+                <!-- Delete Guide (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/guides/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a guide by ID. Cannot delete your own admin account.
+                    </div>
+                </div>
+
+                <!-- Get All Trails (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trails</span>
+                    </div>
+                    <div class="description">
+                        Get all trails with admin-specific filters and pagination.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <div class="description">
+                                Supports: page, limit, isActive, guideId, difficulty, search, sortBy, sortOrder
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Trail by ID (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific trail by ID.
+                    </div>
+                </div>
+
+                <!-- Create Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/admin/trails</span>
+                    </div>
+                    <div class="description">
+                        Create a new trail with GeoJSON data (admin only).
+                    </div>
+                </div>
+
+                <!-- Update Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing trail. All fields are optional.
+                    </div>
+                </div>
+
+                <!-- Delete Trail (Admin) -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/trails/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a trail by ID.
+                    </div>
+                </div>
+
+                <!-- Get Dashboard Statistics -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/stats/dashboard</span>
+                    </div>
+                    <div class="description">
+                        Get comprehensive dashboard statistics including user counts, guide counts, trail counts, 
+                        recent activity, and breakdowns by various categories.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "stats": {
+    "overview": {
+      "totalUsers": 150,
+      "totalGuides": 45,
+      "totalTrails": 120,
+      "activeUsers": 30,
+      "activeGuides": 40,
+      "activeTrails": 115
+    },
+    "recentActivity": {
+      "recentUsers": 15,
+      "recentGuides": 5,
+      "recentTrails": 10,
+      "period": "last 30 days"
+    },
+    "breakdowns": {
+      "usersByRole": {
+        "user": 120,
+        "porter": 20,
+        "admin": 10
+      },
+      "usersBySubscription": {
+        "free": 100,
+        "premium": 50
+      },
+      "trailsByDifficulty": {
+        "easy": 30,
+        "moderate": 50,
+        "hard": 30,
+        "expert": 10
+      },
+      "guidesByExperience": [...]
+    }
+  }
+}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Common Error Responses -->
@@ -1340,6 +2168,18 @@
                     <div class="code-block">Authorization: Bearer &lt;your-jwt-token&gt;</div>
                     <div class="description" style="margin-top: 15px;">
                         <strong>Token Expiration:</strong> Tokens expire after 7 days (configurable via JWT_EXPIRES_IN environment variable).
+                    </div>
+                    <div class="description" style="margin-top: 15px;">
+                        <strong>Admin Routes:</strong> Admin APIs require both authentication (JWT token) and admin role. 
+                        Use <code>/api/admin/auth/login</code> to login as admin. Admin accounts can exist in both User and Guide models.
+                    </div>
+                    <div class="description" style="margin-top: 15px;">
+                        <strong>Role-Based Access:</strong>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li><strong>User routes:</strong> Available to all authenticated users</li>
+                            <li><strong>Guide routes:</strong> Available to guides and admins</li>
+                            <li><strong>Admin routes:</strong> Only accessible to users with admin role</li>
+                        </ul>
                     </div>
                 </div>
             </div>
