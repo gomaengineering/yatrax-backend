@@ -1,49 +1,15 @@
 // controllers/adminGuideController.js
 import Guide from "../models/guideModel.js";
 
-// GET ALL GUIDES (with pagination and filters)
+// GET ALL GUIDES
 export const getAllGuides = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      role,
-      search,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = req.query;
-
-    // Build query
-    const query = {};
-    if (role) query.role = role;
-    if (search) {
-      query.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { lastName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { TBNumber: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    // Pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
-
-    const guides = await Guide.find(query)
-      .select("-password")
-      .sort(sortOptions)
-      .limit(parseInt(limit))
-      .skip(skip);
-
-    const total = await Guide.countDocuments(query);
+    const guides = await Guide.find()
+      .select("-password");
 
     res.status(200).json({
       success: true,
       count: guides.length,
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / parseInt(limit)),
       guides,
     });
   } catch (error) {
@@ -226,6 +192,14 @@ export const deleteGuide = async (req, res) => {
 // CREATE GUIDE (Admin can create guides)
 export const createGuide = async (req, res) => {
   try {
+    // Check if request body exists
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: "Request body is missing or invalid. Please ensure Content-Type is 'application/json' and the request body is properly formatted.",
+      });
+    }
+
     const {
       firstName,
       lastName,
