@@ -1,6 +1,12 @@
 // routes/trailInfoRoutes.js
 import express from "express";
-import { createTrailInfo } from "../controllers/trailInfoController.js";
+import {
+  getAllTrailInfo,
+  getTrailInfoById,
+  createTrailInfo,
+  updateTrailInfo,
+  deleteTrailInfo,
+} from "../controllers/trailInfoController.js";
 import { protect, adminOnly } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -9,7 +15,11 @@ const router = express.Router();
 router.use(protect, adminOnly);
 
 // Trail Info Routes
+router.get("/", getAllTrailInfo);
+router.get("/:id", getTrailInfoById);
 router.post("/", createTrailInfo);
+router.put("/:id", updateTrailInfo);
+router.delete("/:id", deleteTrailInfo);
 
 export default router;
 

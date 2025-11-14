@@ -13,6 +13,7 @@ import adminGuideRoutes from './routes/adminGuideRoutes.js';
 import adminTrailRoutes from './routes/adminTrailRoutes.js';
 import adminStatsRoutes from './routes/adminStatsRoutes.js';
 import trailInfoRoutes from './routes/trailInfoRoutes.js';
+import featuredTrailRoutes from './routes/featuredTrailRoutes.js';
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use("/api/admin/guides", adminGuideRoutes);
 app.use("/api/admin/trails", adminTrailRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
 app.use("/api/admin/trail-info", trailInfoRoutes);
+app.use("/api/admin/featured-trails", featuredTrailRoutes);
 
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
