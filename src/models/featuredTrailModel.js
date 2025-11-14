@@ -30,10 +30,10 @@ const featuredTrailSchema = new mongoose.Schema(
       enum: ["Easy", "Moderate", "Hard", "Extreme"],
       trim: true,
     },
-    image: {
-      type: String,
-      required: [true, "Image URL is required"],
-      trim: true,
+    trailInfoId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TrailInfo",
+      required: [true, "Trail info reference is required"],
     },
   },
   { timestamps: true }

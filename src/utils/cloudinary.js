@@ -69,58 +69,63 @@ export const optionalUpload = multer({
   },
 });
 
-// Middleware to upload file to Cloudinary
-export const uploadToCloudinary = async (req, res, next) => {
-  // Check for files (using .any() returns req.files array)
-  const files = req.files || (req.file ? [req.file] : []);
-  
-  if (files.length === 0) {
-    return next();
-  }
+// Middleware factory to upload file to Cloudinary with configurable folder
+export const createUploadToCloudinary = (folder = 'featured-trails') => {
+  return async (req, res, next) => {
+    // Check for files (using .any() returns req.files array)
+    const files = req.files || (req.file ? [req.file] : []);
+    
+    if (files.length === 0) {
+      return next();
+    }
 
-  // Process the first file (if multiple files are uploaded, use the first one)
-  const file = files[0];
+    // Process the first file (if multiple files are uploaded, use the first one)
+    const file = files[0];
 
-  try {
-    // Convert buffer to stream
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'featured-trails',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-        transformation: [{ width: 1200, height: 800, crop: 'limit' }],
-      },
-      (error, result) => {
-        if (error) {
-          return res.status(400).json({
-            success: false,
-            message: 'Failed to upload image to Cloudinary',
-            error: error.message,
-          });
+    try {
+      // Convert buffer to stream
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: folder,
+          allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+          transformation: [{ width: 1200, height: 800, crop: 'limit' }],
+        },
+        (error, result) => {
+          if (error) {
+            return res.status(400).json({
+              success: false,
+              message: 'Failed to upload image to Cloudinary',
+              error: error.message,
+            });
+          }
+          // Attach Cloudinary URL to file.path for controller to use
+          file.path = result.secure_url;
+          file.public_id = result.public_id;
+          // Also update req.files array
+          if (req.files) {
+            req.files[0] = file;
+          }
+          next();
         }
-        // Attach Cloudinary URL to file.path for controller to use
-        file.path = result.secure_url;
-        file.public_id = result.public_id;
-        // Also update req.files array
-        if (req.files) {
-          req.files[0] = file;
-        }
-        next();
-      }
-    );
+      );
 
-    // Convert buffer to stream
-    const bufferStream = new Readable();
-    bufferStream.push(file.buffer);
-    bufferStream.push(null);
-    bufferStream.pipe(stream);
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: 'Failed to process image upload',
-      error: error.message,
-    });
-  }
+      // Convert buffer to stream
+      const bufferStream = new Readable();
+      bufferStream.push(file.buffer);
+      bufferStream.push(null);
+      bufferStream.pipe(stream);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to process image upload',
+        error: error.message,
+      });
+    }
+  };
 };
+
+// Default middleware for backward compatibility
+export const uploadToCloudinary = createUploadToCloudinary('featured-trails');
 
 // Helper function to upload image directly (for base64 or URL)
 export const uploadImage = async (imagePath, folder = 'featured-trails') => {

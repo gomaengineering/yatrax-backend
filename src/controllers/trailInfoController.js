@@ -1,5 +1,6 @@
 // controllers/trailInfoController.js
 import TrailInfo from "../models/trailInfoModel.js";
+import { uploadImage, deleteImage } from "../utils/cloudinary.js";
 
 // GET ALL TRAIL INFO
 export const getAllTrailInfo = async (req, res) => {
@@ -66,7 +67,7 @@ export const createTrailInfo = async (req, res) => {
       });
     }
 
-    const {
+    let {
       name,
       region,
       country,
@@ -84,6 +85,68 @@ export const createTrailInfo = async (req, res) => {
       environment,
       user_content,
     } = req.body;
+
+    // Parse JSON strings if they come from FormData
+    // FormData sends nested objects as JSON strings
+    // If they're already objects (from JSON request), keep them as is
+    try {
+      if (best_season && typeof best_season === 'string' && best_season.trim()) {
+        best_season = JSON.parse(best_season);
+      }
+      if (major_highlights && typeof major_highlights === 'string' && major_highlights.trim()) {
+        major_highlights = JSON.parse(major_highlights);
+      }
+      if (starting_point && typeof starting_point === 'string' && starting_point.trim()) {
+        starting_point = JSON.parse(starting_point);
+      }
+      if (ending_point && typeof ending_point === 'string' && ending_point.trim()) {
+        ending_point = JSON.parse(ending_point);
+      }
+      if (permit_required && typeof permit_required === 'string' && permit_required.trim()) {
+        permit_required = JSON.parse(permit_required);
+      }
+      if (environment && typeof environment === 'string' && environment.trim()) {
+        environment = JSON.parse(environment);
+      }
+      if (user_content && typeof user_content === 'string' && user_content.trim()) {
+        user_content = JSON.parse(user_content);
+      }
+      // Parse numeric values that might come as strings from FormData
+      if (typeof duration_days === 'string') {
+        duration_days = parseInt(duration_days, 10);
+      }
+      if (typeof total_distance_km === 'string') {
+        total_distance_km = parseFloat(total_distance_km);
+      }
+      if (typeof altitude_min_m === 'string') {
+        altitude_min_m = parseFloat(altitude_min_m);
+      }
+      if (typeof altitude_max_m === 'string') {
+        altitude_max_m = parseFloat(altitude_max_m);
+      }
+      
+      // Ensure starting_point and ending_point are objects after parsing
+      if (starting_point && typeof starting_point === 'object') {
+        // Ensure nested numeric values are properly typed
+        if (starting_point.altitude_m && typeof starting_point.altitude_m === 'string') {
+          starting_point.altitude_m = parseFloat(starting_point.altitude_m);
+        }
+      }
+      if (ending_point && typeof ending_point === 'object') {
+        // Ensure nested numeric values are properly typed
+        if (ending_point.altitude_m && typeof ending_point.altitude_m === 'string') {
+          ending_point.altitude_m = parseFloat(ending_point.altitude_m);
+        }
+      }
+    } catch (parseError) {
+      console.error('Error parsing FormData fields:', parseError);
+      console.error('Request body:', req.body);
+      return res.status(400).json({
+        success: false,
+        message: "Error parsing request data. Please ensure all fields are properly formatted.",
+        error: parseError.message,
+      });
+    }
 
     // Validate required fields
     if (
@@ -109,6 +172,12 @@ export const createTrailInfo = async (req, res) => {
     }
 
     // Validate starting_point
+    if (!starting_point || typeof starting_point !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: "Starting point must be a valid object with 'name' and 'altitude_m' fields",
+      });
+    }
     if (!starting_point.name || starting_point.altitude_m === undefined) {
       return res.status(400).json({
         success: false,
@@ -117,6 +186,12 @@ export const createTrailInfo = async (req, res) => {
     }
 
     // Validate ending_point
+    if (!ending_point || typeof ending_point !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: "Ending point must be a valid object with 'name' and 'altitude_m' fields",
+      });
+    }
     if (!ending_point.name || ending_point.altitude_m === undefined) {
       return res.status(400).json({
         success: false,
@@ -169,6 +244,33 @@ export const createTrailInfo = async (req, res) => {
       });
     }
 
+    // Handle image upload
+    let imageUrl = null;
+    
+    // Check for file upload (multer handles files with any field name)
+    const uploadedFile = req.files && req.files.length > 0 ? req.files[0] : null;
+    
+    if (uploadedFile && uploadedFile.path) {
+      // Image uploaded via multer (file upload)
+      imageUrl = uploadedFile.path; // Cloudinary returns secure_url in path
+    } else if (req.body.imageUrl || req.body.image) {
+      // Image provided as URL or base64 in body
+      const imageInput = req.body.imageUrl || req.body.image;
+      try {
+        imageUrl = await uploadImage(imageInput, 'trail-info');
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to upload image. Please provide a valid image URL or file.",
+        });
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Image is required. Please provide an image file or imageUrl in the request body.",
+      });
+    }
+
     // Prepare trail info data
     const trailInfoData = {
       name,
@@ -201,6 +303,7 @@ export const createTrailInfo = async (req, res) => {
         rating_avg: user_content?.rating_avg || 0,
         rating_count: user_content?.rating_count || 0,
       },
+      image: imageUrl,
     };
 
     // Create trail info
@@ -336,6 +439,49 @@ export const updateTrailInfo = async (req, res) => {
       });
     }
 
+    // Handle image update
+    let imageUrl = trailInfo.image; // Keep existing image by default
+    
+    // Check for file upload (multer handles files with any field name)
+    const uploadedFile = req.files && req.files.length > 0 ? req.files[0] : null;
+    
+    if (uploadedFile && uploadedFile.path) {
+      // New image uploaded via multer
+      // Delete old image from Cloudinary if it exists
+      if (trailInfo.image && trailInfo.image.includes('cloudinary.com')) {
+        try {
+          await deleteImage(trailInfo.image);
+        } catch (error) {
+          console.error("Error deleting old image:", error);
+          // Continue even if deletion fails
+        }
+      }
+      imageUrl = uploadedFile.path;
+    } else if (req.body.imageUrl || req.body.image) {
+      // New image URL provided
+      const newImageInput = req.body.imageUrl || req.body.image;
+      if (newImageInput !== trailInfo.image) {
+        // Delete old image from Cloudinary if it exists
+        if (trailInfo.image && trailInfo.image.includes('cloudinary.com')) {
+          try {
+            await deleteImage(trailInfo.image);
+          } catch (error) {
+            console.error("Error deleting old image:", error);
+            // Continue even if deletion fails
+          }
+        }
+        // Upload new image
+        try {
+          imageUrl = await uploadImage(newImageInput, 'trail-info');
+        } catch (error) {
+          return res.status(400).json({
+            success: false,
+            message: "Failed to upload new image.",
+          });
+        }
+      }
+    }
+
     // Build update data object
     const updateData = {};
     if (name) updateData.name = name;
@@ -362,6 +508,7 @@ export const updateTrailInfo = async (req, res) => {
     if (altitude_min_m !== undefined) updateData.altitude_min_m = altitude_min_m;
     if (altitude_max_m !== undefined) updateData.altitude_max_m = altitude_max_m;
     if (permit_required !== undefined) updateData.permit_required = permit_required;
+    if (imageUrl) updateData.image = imageUrl;
     
     if (environment) {
       updateData.environment = {};
@@ -440,6 +587,16 @@ export const deleteTrailInfo = async (req, res) => {
         success: false,
         message: "Trail info not found",
       });
+    }
+
+    // Delete image from Cloudinary if it exists
+    if (trailInfo.image && trailInfo.image.includes('cloudinary.com')) {
+      try {
+        await deleteImage(trailInfo.image);
+      } catch (error) {
+        console.error("Error deleting image from Cloudinary:", error);
+        // Continue with deletion even if image deletion fails
+      }
     }
 
     await TrailInfo.findByIdAndDelete(id);
