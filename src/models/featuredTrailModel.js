@@ -40,7 +40,6 @@ const featuredTrailSchema = new mongoose.Schema(
 );
 
 // Indexes for common queries
-featuredTrailSchema.index({ id: 1 });
 featuredTrailSchema.index({ name: 1 });
 featuredTrailSchema.index({ activityType: 1 });
 featuredTrailSchema.index({ difficulty: 1 });
