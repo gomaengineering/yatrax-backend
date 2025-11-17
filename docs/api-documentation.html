@@ -2443,6 +2443,307 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                     </div>
                 </div>
 
+                <!-- Get All Trail Info -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trail-info</span>
+                    </div>
+                    <div class="description">
+                        Get all trail information records. Returns a list of all trail info sorted by creation date (newest first).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 2,
+  "trailInfo": [
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "name": "Everest Base Camp Trek",
+      "region": "Khumbu",
+      "country": "Nepal",
+      ...
+    },
+    {
+      "_id": "507f1f77bcf86cd799439015",
+      "name": "Annapurna Circuit",
+      "region": "Annapurna",
+      "country": "Nepal",
+      ...
+    }
+  ]
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/trail-info \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Trail Info by ID -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trail-info/:id</span>
+                    </div>
+                    <div class="description">
+                        Get a specific trail information record by its ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail info ID (MongoDB ObjectId)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "trailInfo": {
+    "_id": "507f1f77bcf86cd799439014",
+    "name": "Everest Base Camp Trek",
+    "region": "Khumbu",
+    "country": "Nepal",
+    "description": "A classic trek to the base of the world's highest mountain...",
+    "difficulty": "hard",
+    "duration_days": 14,
+    "total_distance_km": 130,
+    ...
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/trail-info/507f1f77bcf86cd799439014 \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Error Response Examples</div>
+                            <div class="code-block json">// 404 Not Found
+{
+  "success": false,
+  "message": "Trail info not found"
+}
+
+// 400 Bad Request - Invalid ID
+{
+  "success": false,
+  "message": "Invalid trail info ID"
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Trail Info -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method put">PUT</span>
+                        <span class="endpoint">/api/admin/trail-info/:id</span>
+                    </div>
+                    <div class="description">
+                        Update an existing trail information record. All fields are optional - only provided fields will be updated (partial update).
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail info ID (MongoDB ObjectId)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="description">
+                                All fields are optional. Only include the fields you want to update. Nested objects (starting_point, ending_point, environment, user_content) can be partially updated.
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Request Example</div>
+                            <div class="code-block json">{
+  "name": "Everest Base Camp Trek - Updated",
+  "difficulty": "expert",
+  "duration_days": 16,
+  "user_content": {
+    "rating_avg": 4.9,
+    "rating_count": 1500
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X PUT http://localhost:3000/api/admin/trail-info/507f1f77bcf86cd799439014 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
+  -d '{
+    "name": "Everest Base Camp Trek - Updated",
+    "difficulty": "expert",
+    "duration_days": 16
+  }'</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Trail info updated successfully",
+  "trailInfo": {
+    "_id": "507f1f77bcf86cd799439014",
+    "name": "Everest Base Camp Trek - Updated",
+    "difficulty": "expert",
+    "duration_days": 16,
+    ...
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Error Response Examples</div>
+                            <div class="code-block json">// 404 Not Found
+{
+  "success": false,
+  "message": "Trail info not found"
+}
+
+// 400 Bad Request - Invalid altitude values
+{
+  "success": false,
+  "message": "Minimum altitude cannot be greater than maximum altitude"
+}
+
+// 400 Bad Request - Invalid array
+{
+  "success": false,
+  "message": "best_season must be a non-empty array"
+}
+
+// 400 Bad Request - Invalid rating
+{
+  "success": false,
+  "message": "Rating average must be between 0 and 5"
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delete Trail Info -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint">/api/admin/trail-info/:id</span>
+                    </div>
+                    <div class="description">
+                        Delete a trail information record by its ID.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail info ID (MongoDB ObjectId)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "message": "Trail info deleted successfully"
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X DELETE http://localhost:3000/api/admin/trail-info/507f1f77bcf86cd799439014 \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Error Response Examples</div>
+                            <div class="code-block json">// 404 Not Found
+{
+  "success": false,
+  "message": "Trail info not found"
+}
+
+// 400 Bad Request - Invalid ID
+{
+  "success": false,
+  "message": "Invalid trail info ID"
+}</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Get Dashboard Statistics -->
                 <div class="api-card">
                     <div class="api-header">

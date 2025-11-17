@@ -113,6 +113,11 @@ const trailInfoSchema = new mongoose.Schema(
         min: [0, "Rating count must be at least 0"],
       },
     },
+    image: {
+      type: String,
+      required: [true, "Image URL is required"],
+      trim: true,
+    },
   },
   { timestamps: true }
 );
