@@ -1,11 +1,13 @@
 // controllers/featuredTrailController.js
 import FeaturedTrail from "../models/featuredTrailModel.js";
-import { uploadImage, deleteImage } from "../utils/cloudinary.js";
+import TrailInfo from "../models/trailInfoModel.js";
 
 // GET ALL FEATURED TRAILS
 export const getAllFeaturedTrails = async (req, res) => {
   try {
-    const featuredTrails = await FeaturedTrail.find().sort({ createdAt: -1 });
+    const featuredTrails = await FeaturedTrail.find()
+      .populate('trailInfoId', 'image name description')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -27,7 +29,8 @@ export const getFeaturedTrailById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const featuredTrail = await FeaturedTrail.findById(id);
+    const featuredTrail = await FeaturedTrail.findById(id)
+      .populate('trailInfoId', 'image name description');
 
     if (!featuredTrail) {
       return res.status(404).json({
@@ -67,13 +70,13 @@ export const createFeaturedTrail = async (req, res) => {
       });
     }
 
-    const { name, location, time, activityType, difficulty } = req.body;
+    const { name, location, time, activityType, difficulty, trailInfoId } = req.body;
 
     // Validate required fields
-    if (!name || !location || !time || !activityType || !difficulty) {
+    if (!name || !location || !time || !activityType || !difficulty || !trailInfoId) {
       return res.status(400).json({
         success: false,
-        message: "All fields are required: name, location, time, activityType, difficulty",
+        message: "All fields are required: name, location, time, activityType, difficulty, trailInfoId",
       });
     }
 
@@ -95,30 +98,12 @@ export const createFeaturedTrail = async (req, res) => {
       });
     }
 
-    // Handle image upload
-    let imageUrl = null;
-    
-    // Check for file upload (multer handles files with any field name)
-    const uploadedFile = req.files && req.files.length > 0 ? req.files[0] : null;
-    
-    if (uploadedFile && uploadedFile.path) {
-      // Image uploaded via multer (file upload)
-      imageUrl = uploadedFile.path; // Cloudinary returns secure_url in path
-    } else if (req.body.imageUrl || req.body.image) {
-      // Image provided as URL or base64 in body
-      const imageInput = req.body.imageUrl || req.body.image;
-      try {
-        imageUrl = await uploadImage(imageInput);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to upload image. Please provide a valid image URL or file.",
-        });
-      }
-    } else {
-      return res.status(400).json({
+    // Validate that the referenced TrailInfo exists
+    const trailInfo = await TrailInfo.findById(trailInfoId);
+    if (!trailInfo) {
+      return res.status(404).json({
         success: false,
-        message: "Image is required. Please provide an image file or imageUrl in the request body.",
+        message: "Referenced trail info not found",
       });
     }
 
@@ -129,7 +114,7 @@ export const createFeaturedTrail = async (req, res) => {
       time,
       activityType,
       difficulty,
-      image: imageUrl,
+      trailInfoId,
     });
 
     res.status(201).json({
@@ -160,7 +145,7 @@ export const createFeaturedTrail = async (req, res) => {
 export const updateFeaturedTrail = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, location, time, activityType, difficulty } = req.body;
+    const { name, location, time, activityType, difficulty, trailInfoId } = req.body;
 
     // Check if featured trail exists
     const featuredTrail = await FeaturedTrail.findById(id);
@@ -193,46 +178,14 @@ export const updateFeaturedTrail = async (req, res) => {
       }
     }
 
-    // Handle image update
-    let imageUrl = featuredTrail.image; // Keep existing image by default
-    
-    // Check for file upload (multer handles files with any field name)
-    const uploadedFile = req.files && req.files.length > 0 ? req.files[0] : null;
-    
-    if (uploadedFile && uploadedFile.path) {
-      // New image uploaded via multer
-      // Delete old image from Cloudinary if it exists
-      if (featuredTrail.image && featuredTrail.image.includes('cloudinary.com')) {
-        try {
-          await deleteImage(featuredTrail.image);
-        } catch (error) {
-          console.error("Error deleting old image:", error);
-          // Continue even if deletion fails
-        }
-      }
-      imageUrl = uploadedFile.path;
-    } else if (req.body.imageUrl || req.body.image) {
-      // New image URL provided
-      const newImageInput = req.body.imageUrl || req.body.image;
-      if (newImageInput !== featuredTrail.image) {
-        // Delete old image from Cloudinary if it exists
-        if (featuredTrail.image && featuredTrail.image.includes('cloudinary.com')) {
-          try {
-            await deleteImage(featuredTrail.image);
-          } catch (error) {
-            console.error("Error deleting old image:", error);
-            // Continue even if deletion fails
-          }
-        }
-        // Upload new image
-        try {
-          imageUrl = await uploadImage(newImageInput);
-        } catch (error) {
-          return res.status(400).json({
-            success: false,
-            message: "Failed to upload new image.",
-          });
-        }
+    // Validate trailInfoId if provided
+    if (trailInfoId) {
+      const trailInfo = await TrailInfo.findById(trailInfoId);
+      if (!trailInfo) {
+        return res.status(404).json({
+          success: false,
+          message: "Referenced trail info not found",
+        });
       }
     }
 
@@ -243,7 +196,7 @@ export const updateFeaturedTrail = async (req, res) => {
     if (time) updateData.time = time;
     if (activityType) updateData.activityType = activityType;
     if (difficulty) updateData.difficulty = difficulty;
-    if (imageUrl) updateData.image = imageUrl;
+    if (trailInfoId) updateData.trailInfoId = trailInfoId;
 
     const updatedFeaturedTrail = await FeaturedTrail.findByIdAndUpdate(
       id,
@@ -296,16 +249,6 @@ export const deleteFeaturedTrail = async (req, res) => {
         success: false,
         message: "Featured trail not found",
       });
-    }
-
-    // Delete image from Cloudinary if it exists
-    if (featuredTrail.image && featuredTrail.image.includes('cloudinary.com')) {
-      try {
-        await deleteImage(featuredTrail.image);
-      } catch (error) {
-        console.error("Error deleting image from Cloudinary:", error);
-        // Continue with deletion even if image deletion fails
-      }
     }
 
     await FeaturedTrail.findByIdAndDelete(id);
