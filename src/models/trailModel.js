@@ -3,22 +3,20 @@ import mongoose from "mongoose";
 
 const trailSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, "Trail name is required"],
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    // GeoJSON Feature structure
+    // GeoJSON Feature structure - matches exact GeoJSON Feature format
     type: {
       type: String,
       enum: ["Feature"],
       default: "Feature",
       required: true,
     },
+    // GeoJSON properties - contains: fid, id, name, difficulty (numeric), potato
+    properties: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+      required: true,
+    },
+    // GeoJSON geometry
     geometry: {
       type: {
         type: String,
@@ -30,29 +28,6 @@ const trailSchema = new mongoose.Schema(
         required: [true, "Coordinates are required"],
       },
     },
-    properties: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
-    // Additional metadata
-    difficulty: {
-      type: String,
-      enum: ["easy", "moderate", "hard", "expert"],
-    },
-    length: {
-      type: Number, // in kilometers
-    },
-    elevation: {
-      type: Number, // in meters
-    },
-    guideId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Guide",
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
   },
   { timestamps: true }
 );
@@ -60,10 +35,10 @@ const trailSchema = new mongoose.Schema(
 // Create 2dsphere index on geometry field for geospatial queries
 trailSchema.index({ geometry: "2dsphere" });
 
-// Index for common queries
-trailSchema.index({ name: 1 });
-trailSchema.index({ guideId: 1 });
-trailSchema.index({ isActive: 1 });
+// Index for common queries on properties
+trailSchema.index({ "properties.fid": 1 });
+trailSchema.index({ "properties.id": 1 });
+trailSchema.index({ "properties.name": 1 });
 
 // Validation method to ensure valid GeoJSON structure
 trailSchema.methods.validateGeoJSON = function () {
@@ -160,12 +135,56 @@ trailSchema.methods.validateCoordinates = function (type, coordinates) {
 // Pre-save hook to validate GeoJSON structure
 trailSchema.pre("save", function (next) {
   try {
+    // Validate GeoJSON structure
     this.validateGeoJSON();
+
+    // Ensure properties object exists
+    if (!this.properties || typeof this.properties !== "object") {
+      this.properties = {};
+    }
+
     next();
   } catch (error) {
     next(error);
   }
 });
+
+// Static method to create Trail from GeoJSON Feature
+trailSchema.statics.fromGeoJSONFeature = function(feature) {
+  if (!feature || feature.type !== 'Feature') {
+    throw new Error('Invalid GeoJSON Feature: must have type "Feature"');
+  }
+
+  return new this({
+    type: 'Feature',
+    geometry: feature.geometry,
+    properties: feature.properties || {},
+  });
+};
+
+// Static method to create multiple Trails from GeoJSON FeatureCollection
+trailSchema.statics.fromGeoJSONFeatureCollection = function(featureCollection) {
+  if (!featureCollection || featureCollection.type !== 'FeatureCollection') {
+    throw new Error('Invalid GeoJSON FeatureCollection: must have type "FeatureCollection"');
+  }
+
+  if (!Array.isArray(featureCollection.features)) {
+    throw new Error('Invalid GeoJSON FeatureCollection: features must be an array');
+  }
+
+  return featureCollection.features.map((feature) => {
+    return this.fromGeoJSONFeature(feature);
+  });
+};
+
+// Instance method to convert Trail to GeoJSON Feature format
+trailSchema.methods.toGeoJSONFeature = function() {
+  return {
+    type: 'Feature',
+    geometry: this.geometry,
+    properties: this.properties || {},
+  };
+};
 
 const Trail = mongoose.model("Trail", trailSchema);
 export default Trail;
