@@ -2,6 +2,7 @@
 import express from "express";
 import {
   createTrail,
+  createTrailsFromFeatureCollection,
   getAllTrails,
   getTrailById,
   updateTrail,
@@ -21,6 +22,7 @@ router.get("/within/radius", findTrailsWithinRadius);
 router.post("/intersecting", findTrailsIntersecting);
 
 // CRUD Operations
+router.post("/feature-collection", createTrailsFromFeatureCollection); // Import FeatureCollection
 router.post("/", createTrail);
 router.get("/", getAllTrails);
 router.get("/:id", getTrailById);
