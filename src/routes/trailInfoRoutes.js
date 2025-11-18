@@ -13,16 +13,16 @@ import { optionalUpload, createUploadToCloudinary } from "../utils/cloudinary.js
 const router = express.Router();
 
 // All routes require authentication and admin role
-router.use(protect, adminOnly);
+// router.use(protect, adminOnly);
 
 // Trail Info Routes
-router.get("/", getAllTrailInfo);
+router.get("/",getAllTrailInfo);
 router.get("/:id", getTrailInfoById);
 // Use optionalUpload to allow both file upload (field: 'image') or imageUrl in body
 // Use 'trail-info' folder for Cloudinary uploads
-router.post("/", optionalUpload.any(), createUploadToCloudinary('trail-info'), createTrailInfo);
-router.put("/:id", optionalUpload.any(), createUploadToCloudinary('trail-info'), updateTrailInfo);
-router.delete("/:id", deleteTrailInfo);
+router.post("/", protect, adminOnly, optionalUpload.any(), createUploadToCloudinary('trail-info'), createTrailInfo);
+router.put("/:id", protect, adminOnly, optionalUpload.any(), createUploadToCloudinary('trail-info'), updateTrailInfo);
+router.delete("/:id", protect, adminOnly, deleteTrailInfo);
 
 export default router;
 
