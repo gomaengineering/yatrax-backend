@@ -1,31 +1,24 @@
 // controllers/trailController.js
 import Trail from "../models/trailModel.js";
 
-// 🗺️ CREATE TRAIL (Save GeoJSON)
+// 🗺️ CREATE TRAIL (Save GeoJSON Feature)
 export const createTrail = async (req, res) => {
   try {
-    const { name, description, type, geometry, properties, difficulty, length, elevation, guideId, isActive } = req.body;
+    const { type, geometry, properties } = req.body;
 
     // Validate required fields
-    if (!name || !geometry) {
+    if (!geometry || !geometry.type || !geometry.coordinates) {
       return res.status(400).json({
         success: false,
-        message: "Name and geometry are required",
+        message: "Geometry with type and coordinates are required",
       });
     }
 
     // Ensure type is "Feature" for valid GeoJSON
     const trailData = {
-      name,
-      description,
       type: type || "Feature",
       geometry,
       properties: properties || {},
-      difficulty,
-      length,
-      elevation,
-      guideId,
-      isActive: isActive !== undefined ? isActive : true,
     };
 
     // Create trail (validation happens in pre-save hook)
@@ -56,24 +49,94 @@ export const createTrail = async (req, res) => {
   }
 };
 
+// 🗺️ CREATE TRAILS FROM FEATURECOLLECTION (Import GeoJSON FeatureCollection)
+export const createTrailsFromFeatureCollection = async (req, res) => {
+  try {
+    const { type, features, name, crs } = req.body;
+
+    // Validate FeatureCollection structure
+    if (type !== "FeatureCollection") {
+      return res.status(400).json({
+        success: false,
+        message: "Type must be 'FeatureCollection'",
+      });
+    }
+
+    if (!Array.isArray(features) || features.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Features array is required and must not be empty",
+      });
+    }
+
+    // Create FeatureCollection object
+    const featureCollection = {
+      type: "FeatureCollection",
+      features,
+      ...(name && { name }),
+      ...(crs && { crs }),
+    };
+
+    // Convert FeatureCollection to Trail documents
+    const trailDocuments = Trail.fromGeoJSONFeatureCollection(featureCollection);
+
+    // Save all trails
+    const savedTrails = await Trail.insertMany(trailDocuments, { ordered: false });
+
+    res.status(201).json({
+      success: true,
+      message: `${savedTrails.length} trail(s) created successfully from FeatureCollection`,
+      count: savedTrails.length,
+      trails: savedTrails,
+    });
+  } catch (error) {
+    console.error("Create trails from FeatureCollection error:", error);
+    
+    // Handle validation errors
+    if (error.name === "ValidationError") {
+      return res.status(400).json({
+        success: false,
+        message: "Validation error",
+        error: error.message,
+      });
+    }
+
+    // Handle bulk write errors
+    if (error.name === "BulkWriteError") {
+      return res.status(400).json({
+        success: false,
+        message: "Some trails failed validation",
+        error: error.message,
+        insertedCount: error.result?.insertedCount || 0,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 // 📍 GET ALL TRAILS
 export const getAllTrails = async (req, res) => {
   try {
-    const { isActive, guideId, difficulty, limit = 100, page = 1 } = req.query;
+    const { fid, id, name, difficulty, limit = 100, page = 1 } = req.query;
 
-    // Build query
+    // Build query based on properties
     const query = {};
-    if (isActive !== undefined) query.isActive = isActive === "true";
-    if (guideId) query.guideId = guideId;
-    if (difficulty) query.difficulty = difficulty;
+    if (fid) query["properties.fid"] = parseInt(fid);
+    if (id) query["properties.id"] = parseInt(id);
+    if (name) query["properties.name"] = { $regex: name, $options: "i" }; // Case-insensitive search
+    if (difficulty) query["properties.difficulty"] = parseInt(difficulty);
 
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const trails = await Trail.find(query)
       .limit(parseInt(limit))
       .skip(skip)
-      .sort({ createdAt: -1 })
-      .populate("guideId", "firstName lastName email");
+      .sort({ createdAt: -1 });
 
     const total = await Trail.countDocuments(query);
 
@@ -100,7 +163,7 @@ export const getTrailById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const trail = await Trail.findById(id).populate("guideId", "firstName lastName email");
+    const trail = await Trail.findById(id);
 
     if (!trail) {
       return res.status(404).json({
@@ -135,7 +198,13 @@ export const getTrailById = async (req, res) => {
 export const updateTrail = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { type, geometry, properties } = req.body;
+
+    // Build update data - only allow type, geometry, and properties
+    const updateData = {};
+    if (type) updateData.type = type;
+    if (geometry) updateData.geometry = geometry;
+    if (properties) updateData.properties = properties;
 
     // Don't allow changing the _id
     delete updateData._id;
@@ -253,10 +322,8 @@ export const findTrailsNear = async (req, res) => {
           $minDistance: parseFloat(minDistance), // in meters
         },
       },
-      isActive: true,
     })
-      .limit(parseInt(limit))
-      .populate("guideId", "firstName lastName email");
+      .limit(parseInt(limit));
 
     res.status(200).json({
       success: true,
@@ -298,8 +365,7 @@ export const findTrailsWithin = async (req, res) => {
           $geometry: polygon,
         },
       },
-      isActive: true,
-    }).populate("guideId", "firstName lastName email");
+    });
 
     res.status(200).json({
       success: true,
@@ -349,10 +415,8 @@ export const findTrailsWithinRadius = async (req, res) => {
           $centerSphere: [[lng, lat], radiusInRadians],
         },
       },
-      isActive: true,
     })
-      .limit(parseInt(limit))
-      .populate("guideId", "firstName lastName email");
+      .limit(parseInt(limit));
 
     res.status(200).json({
       success: true,
@@ -387,8 +451,7 @@ export const findTrailsIntersecting = async (req, res) => {
           $geometry: geometry,
         },
       },
-      isActive: true,
-    }).populate("guideId", "firstName lastName email");
+    });
 
     res.status(200).json({
       success: true,
