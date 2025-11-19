@@ -5,7 +5,14 @@ import { uploadImage, deleteImage } from "../utils/cloudinary.js";
 // GET ALL TRAIL INFO
 export const getAllTrailInfo = async (req, res) => {
   try {
-    const trailInfoList = await TrailInfo.find().sort({ createdAt: -1 });
+    const { isFeatured } = req.query;
+    
+    const query = {};
+    if (isFeatured !== undefined) {
+      query.isFeatured = isFeatured === 'true';
+    }
+
+    const trailInfoList = await TrailInfo.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -14,6 +21,39 @@ export const getAllTrailInfo = async (req, res) => {
     });
   } catch (error) {
     console.error("Get all trail info error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// GET FEATURED TRAILS (Specific response format)
+export const getFeaturedTrails = async (req, res) => {
+  try {
+    const featuredTrails = await TrailInfo.find()
+      .select("name region country difficulty duration_days activityType image")
+      .sort({ createdAt: -1 });
+
+    const formattedTrails = featuredTrails.map(trail => ({
+      id: trail._id,
+      name: trail.name,
+      region: trail.region,
+      country: trail.country,
+      difficulty: trail.difficulty,
+      duration_days: trail.duration_days,
+      activityType: trail.activityType,
+      image: trail.image
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: formattedTrails.length,
+      trails: formattedTrails,
+    });
+  } catch (error) {
+    console.error("Get featured trails error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -56,6 +96,8 @@ export const getTrailInfoById = async (req, res) => {
   }
 };
 
+
+
 // CREATE TRAIL INFO (Insert trail details)
 export const createTrailInfo = async (req, res) => {
   try {
@@ -84,6 +126,10 @@ export const createTrailInfo = async (req, res) => {
       permit_required,
       environment,
       user_content,
+      location,
+      time,
+      activityType,
+      isFeatured,
     } = req.body;
 
     // Parse JSON strings if they come from FormData
@@ -123,6 +169,9 @@ export const createTrailInfo = async (req, res) => {
       }
       if (typeof altitude_max_m === 'string') {
         altitude_max_m = parseFloat(altitude_max_m);
+      }
+      if (isFeatured && typeof isFeatured === 'string') {
+        isFeatured = isFeatured === 'true';
       }
       
       // Ensure starting_point and ending_point are objects after parsing
@@ -244,6 +293,17 @@ export const createTrailInfo = async (req, res) => {
       });
     }
 
+    // Validate activityType if provided
+    if (activityType) {
+      const validActivityTypes = ["Hike", "Trekking", "City Tour"];
+      if (!validActivityTypes.includes(activityType)) {
+        return res.status(400).json({
+          success: false,
+          message: `activityType must be one of: ${validActivityTypes.join(", ")}`,
+        });
+      }
+    }
+
     // Handle image upload
     let imageUrl = null;
     
@@ -304,6 +364,10 @@ export const createTrailInfo = async (req, res) => {
         rating_count: user_content?.rating_count || 0,
       },
       image: imageUrl,
+      location,
+      time,
+      activityType,
+      isFeatured: isFeatured || false,
     };
 
     // Create trail info
@@ -354,6 +418,10 @@ export const updateTrailInfo = async (req, res) => {
       permit_required,
       environment,
       user_content,
+      location,
+      time,
+      activityType,
+      isFeatured,
     } = req.body;
 
     // Check if trail info exists
@@ -439,6 +507,17 @@ export const updateTrailInfo = async (req, res) => {
       });
     }
 
+    // Validate activityType if provided
+    if (activityType) {
+      const validActivityTypes = ["Hike", "Trekking", "City Tour"];
+      if (!validActivityTypes.includes(activityType)) {
+        return res.status(400).json({
+          success: false,
+          message: `activityType must be one of: ${validActivityTypes.join(", ")}`,
+        });
+      }
+    }
+
     // Handle image update
     let imageUrl = trailInfo.image; // Keep existing image by default
     
@@ -509,6 +588,10 @@ export const updateTrailInfo = async (req, res) => {
     if (altitude_max_m !== undefined) updateData.altitude_max_m = altitude_max_m;
     if (permit_required !== undefined) updateData.permit_required = permit_required;
     if (imageUrl) updateData.image = imageUrl;
+    if (location) updateData.location = location;
+    if (time) updateData.time = time;
+    if (activityType) updateData.activityType = activityType;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
     
     if (environment) {
       updateData.environment = {};
