@@ -1,5 +1,6 @@
 // controllers/trailInfoController.js
 import TrailInfo from "../models/trailInfoModel.js";
+import Trail from "../models/trailModel.js";
 import { uploadImage, deleteImage } from "../utils/cloudinary.js";
 
 // GET ALL TRAIL INFO
@@ -130,6 +131,7 @@ export const createTrailInfo = async (req, res) => {
       time,
       activityType,
       isFeatured,
+      trailId,
     } = req.body;
 
     // Parse JSON strings if they come from FormData
@@ -368,10 +370,28 @@ export const createTrailInfo = async (req, res) => {
       time,
       activityType,
       isFeatured: isFeatured || false,
+      trailId: trailId || null,
     };
 
     // Create trail info
     const newTrailInfo = await TrailInfo.create(trailInfoData);
+
+    // Link to Trail model if trailId is provided
+    if (trailId) {
+      const trail = await Trail.findById(trailId);
+      if (trail) {
+        // Update Trail properties with trailInfoId and activityType
+        const properties = trail.properties || {};
+        properties.trailInfoId = newTrailInfo._id;
+        if (activityType) {
+          properties.activityType = activityType;
+        }
+        
+        // Use markModified because properties is Mixed type
+        trail.markModified('properties');
+        await trail.save();
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -422,6 +442,7 @@ export const updateTrailInfo = async (req, res) => {
       time,
       activityType,
       isFeatured,
+      trailId,
     } = req.body;
 
     // Check if trail info exists
@@ -592,6 +613,7 @@ export const updateTrailInfo = async (req, res) => {
     if (time) updateData.time = time;
     if (activityType) updateData.activityType = activityType;
     if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+    if (trailId) updateData.trailId = trailId;
     
     if (environment) {
       updateData.environment = {};
@@ -627,6 +649,21 @@ export const updateTrailInfo = async (req, res) => {
       new: true,
       runValidators: true,
     });
+
+    // Update linked Trail model if trailId or activityType changed
+    if (updatedTrailInfo.trailId) {
+      const trail = await Trail.findById(updatedTrailInfo.trailId);
+      if (trail) {
+        const properties = trail.properties || {};
+        properties.trailInfoId = updatedTrailInfo._id;
+        if (updatedTrailInfo.activityType) {
+          properties.activityType = updatedTrailInfo.activityType;
+        }
+        
+        trail.markModified('properties');
+        await trail.save();
+      }
+    }
 
     res.status(200).json({
       success: true,

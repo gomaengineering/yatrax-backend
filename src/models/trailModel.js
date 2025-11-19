@@ -39,6 +39,8 @@ trailSchema.index({ geometry: "2dsphere" });
 trailSchema.index({ "properties.fid": 1 });
 trailSchema.index({ "properties.id": 1 });
 trailSchema.index({ "properties.name": 1 });
+trailSchema.index({ "properties.trailInfoId": 1 });
+trailSchema.index({ "properties.activityType": 1 });
 
 // Validation method to ensure valid GeoJSON structure
 trailSchema.methods.validateGeoJSON = function () {
