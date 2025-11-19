@@ -29,23 +29,13 @@ const trailInfoSchema = new mongoose.Schema(
       trim: true,
     },
     // Merged from FeaturedTrail
-    location: {
-      type: String,
-      trim: true,
-    },
-    time: {
-      type: String,
-      trim: true,
-    },
+
     activityType: {
       type: String,
       enum: ["Hike", "Trekking", "City Tour"],
       trim: true,
     },
-    isFeatured: {
-      type: Boolean,
-      default: false,
-    },
+
     duration_days: {
       type: Number,
       required: [true, "Duration in days is required"],
@@ -136,6 +126,11 @@ const trailInfoSchema = new mongoose.Schema(
       required: [true, "Image URL is required"],
       trim: true,
     },
+    trailId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trail",
+      required: false,
+    },
   },
   { timestamps: true }
 );
@@ -149,6 +144,7 @@ trailInfoSchema.index({ "user_content.rating_avg": -1 });
 trailInfoSchema.index({ isFeatured: 1 });
 trailInfoSchema.index({ activityType: 1 });
 trailInfoSchema.index({ location: 1 });
+trailInfoSchema.index({ trailId: 1 });
 
 const TrailInfo = mongoose.model("TrailInfo", trailInfoSchema);
 export default TrailInfo;
