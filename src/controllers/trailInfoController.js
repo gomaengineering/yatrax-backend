@@ -32,7 +32,7 @@ export const getAllTrailInfo = async (req, res) => {
 // GET FEATURED TRAILS (Specific response format)
 export const getFeaturedTrails = async (req, res) => {
   try {
-    const featuredTrails = await TrailInfo.find({ isFeatured: true })
+    const featuredTrails = await TrailInfo.find()
       .select("name region country difficulty duration_days activityType image")
       .sort({ createdAt: -1 });
 
