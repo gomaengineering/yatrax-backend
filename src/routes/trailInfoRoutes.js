@@ -2,6 +2,7 @@
 import express from "express";
 import {
   getAllTrailInfo,
+  getFeaturedTrails,
   getTrailInfoById,
   createTrailInfo,
   updateTrailInfo,
@@ -16,7 +17,8 @@ const router = express.Router();
 // router.use(protect, adminOnly);
 
 // Trail Info Routes
-router.get("/",getAllTrailInfo);
+router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
+router.get("/", getAllTrailInfo);
 router.get("/:id", getTrailInfoById);
 // Use optionalUpload to allow both file upload (field: 'image') or imageUrl in body
 // Use 'trail-info' folder for Cloudinary uploads
