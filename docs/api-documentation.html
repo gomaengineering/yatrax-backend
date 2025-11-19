@@ -764,14 +764,14 @@
             <div class="section" id="trail-apis">
                 <h2 class="section-title">🗺️ Trail & GeoJSON APIs</h2>
 
-                <!-- Create Trail -->
+                <!-- Create Trail (GeoJSON Feature) -->
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
                         <span class="endpoint">/api/trails</span>
                     </div>
                     <div class="description">
-                        Create a new trail with GeoJSON data. Supports Point, LineString, Polygon, MultiPoint, MultiLineString, and MultiPolygon geometries.
+                        Create a new trail using a standard GeoJSON Feature.
                     </div>
                     <div class="details">
                         <div class="detail-section">
@@ -787,175 +787,86 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>name</td>
-                                        <td>String</td>
-                                        <td><span class="required">Yes</span></td>
-                                        <td>Trail name</td>
-                                    </tr>
-                                    <tr>
-                                        <td>description</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Trail description</td>
-                                    </tr>
-                                    <tr>
                                         <td>type</td>
                                         <td>String</td>
                                         <td><span class="optional">Optional</span></td>
-                                        <td>GeoJSON type (default: "Feature")</td>
+                                        <td>Must be "Feature" (default: "Feature")</td>
                                     </tr>
                                     <tr>
                                         <td>geometry</td>
                                         <td>Object</td>
                                         <td><span class="required">Yes</span></td>
-                                        <td>GeoJSON geometry object</td>
+                                        <td>GeoJSON geometry object (Point, LineString, Polygon, etc.)</td>
                                     </tr>
                                     <tr>
                                         <td>properties</td>
                                         <td>Object</td>
                                         <td><span class="optional">Optional</span></td>
-                                        <td>GeoJSON properties object</td>
-                                    </tr>
-                                    <tr>
-                                        <td>difficulty</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Trail difficulty: "easy", "moderate", "hard", "expert"</td>
-                                    </tr>
-                                    <tr>
-                                        <td>length</td>
-                                        <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Trail length in kilometers</td>
-                                    </tr>
-                                    <tr>
-                                        <td>elevation</td>
-                                        <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Trail elevation in meters</td>
-                                    </tr>
-                                    <tr>
-                                        <td>guideId</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Associated guide's ID</td>
+                                        <td>Arbitrary properties (e.g., name, difficulty, fid)</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                         <div class="detail-section">
-                            <div class="detail-title">Request Example (Point Geometry)</div>
+                            <div class="detail-title">Request Example</div>
                             <div class="code-block json">{
-  "name": "Everest Base Camp Trail",
-  "description": "Classic trek to Everest Base Camp starting point",
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [86.9250, 27.9881]
-  },
-  "properties": {
-    "name": "Everest Base Camp",
-    "region": "Khumbu",
-    "altitude": "5364m",
-    "season": "Spring/Autumn"
-  },
-  "difficulty": "hard",
-  "length": 130,
-  "elevation": 5364,
-  "guideId": "507f1f77bcf86cd799439012"
-}</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Request Example (LineString Geometry)</div>
-                            <div class="code-block json">{
-  "name": "Annapurna Circuit Trail",
-  "description": "Complete trekking route around Annapurna massif",
   "type": "Feature",
   "geometry": {
     "type": "LineString",
     "coordinates": [
       [84.3294, 28.2096],
-      [84.3500, 28.2200],
-      [84.3700, 28.2300],
-      [84.3900, 28.2400]
+      [84.3500, 28.2200]
     ]
   },
   "properties": {
-    "region": "Annapurna",
-    "permits_required": ["ACAP", "TIMS"],
-    "best_months": ["March", "April", "May", "October", "November"]
-  },
-  "difficulty": "moderate",
-  "length": 230,
-  "elevation": 5416,
-  "guideId": "507f1f77bcf86cd799439012"
+    "name": "Annapurna Circuit",
+    "difficulty": 5,
+    "fid": 123
+  }
 }</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">cURL Test Command</div>
-                            <div class="code-block">curl -X POST http://localhost:3000/api/trails \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test Trail",
-    "description": "A test trail for API testing",
-    "geometry": {
-      "type": "Point",
-      "coordinates": [85.3240, 27.7172]
-    },
-    "difficulty": "easy",
-    "length": 5.5,
-    "elevation": 1400
-  }'</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
                             <div>
                                 <span class="response-code success">201 Created</span>
-                                <span class="response-code error">400 Bad Request</span>
-                                <span class="response-code error">500 Server Error</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import FeatureCollection -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method post">POST</span>
+                        <span class="endpoint">/api/trails/feature-collection</span>
+                    </div>
+                    <div class="description">
+                        Import multiple trails from a GeoJSON FeatureCollection.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
                             <div class="code-block json">{
-  "success": true,
-  "message": "Trail created successfully",
-  "trail": {
-    "_id": "507f1f77bcf86cd799439013",
-    "name": "Everest Base Camp Trail",
-    "description": "Classic trek to Everest Base Camp starting point",
-    "type": "Feature",
-    "geometry": {
-      "type": "Point",
-      "coordinates": [86.9250, 27.9881]
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { ... },
+      "properties": { ... }
     },
-    "properties": {
-      "name": "Everest Base Camp",
-      "region": "Khumbu",
-      "altitude": "5364m",
-      "season": "Spring/Autumn"
-    },
-    "difficulty": "hard",
-    "length": 130,
-    "elevation": 5364,
-    "guideId": "507f1f77bcf86cd799439012",
-    "isActive": true,
-    "createdAt": "2024-11-10T10:30:00.000Z",
-    "updatedAt": "2024-11-10T10:30:00.000Z"
-  }
+    {
+      "type": "Feature",
+      "geometry": { ... },
+      "properties": { ... }
+    }
+  ]
 }</div>
                         </div>
                         <div class="detail-section">
-                            <div class="detail-title">Error Response Examples</div>
-                            <div class="code-block json">// 400 Bad Request - Missing required fields
-{
-  "success": false,
-  "message": "Name and geometry are required"
-}
-
-// 400 Bad Request - Validation Error
-{
-  "success": false,
-  "message": "Validation error",
-  "error": "Trail validation failed: difficulty: `invalid` is not a valid enum value for path `difficulty`."
-}</div>
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">201 Created</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -967,7 +878,7 @@
                         <span class="endpoint">/api/trails</span>
                     </div>
                     <div class="description">
-                        Get all trails with pagination and filtering options.
+                        Get all trails with pagination and property filtering.
                     </div>
                     <div class="details">
                         <div class="detail-section">
@@ -977,7 +888,6 @@
                                     <tr>
                                         <th>Parameter</th>
                                         <th>Type</th>
-                                        <th>Required</th>
                                         <th>Description</th>
                                     </tr>
                                 </thead>
@@ -985,118 +895,30 @@
                                     <tr>
                                         <td>page</td>
                                         <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
                                         <td>Page number (default: 1)</td>
                                     </tr>
                                     <tr>
                                         <td>limit</td>
                                         <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
                                         <td>Items per page (default: 100)</td>
                                     </tr>
                                     <tr>
-                                        <td>isActive</td>
-                                        <td>Boolean</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by active status</td>
+                                        <td>fid</td>
+                                        <td>Number</td>
+                                        <td>Filter by property 'fid'</td>
+                                    </tr>
+                                    <tr>
+                                        <td>name</td>
+                                        <td>String</td>
+                                        <td>Filter by property 'name' (regex)</td>
                                     </tr>
                                     <tr>
                                         <td>difficulty</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by difficulty level</td>
-                                    </tr>
-                                    <tr>
-                                        <td>guideId</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by guide ID</td>
+                                        <td>Number</td>
+                                        <td>Filter by property 'difficulty'</td>
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Request Examples</div>
-                            <div class="code-block">// Get all active trails
-GET /api/trails?isActive=true
-
-// Get trails with pagination
-GET /api/trails?page=1&limit=10
-
-// Filter by difficulty
-GET /api/trails?difficulty=hard&isActive=true
-
-// Filter by guide
-GET /api/trails?guideId=507f1f77bcf86cd799439012
-
-// Combined filters
-GET /api/trails?page=1&limit=5&difficulty=moderate&isActive=true</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">cURL Test Command</div>
-                            <div class="code-block">curl -X GET "http://localhost:3000/api/trails?page=1&limit=5&difficulty=moderate" \
-  -H "Accept: application/json"</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Response</div>
-                            <div>
-                                <span class="response-code success">200 OK</span>
-                                <span class="response-code error">500 Server Error</span>
-                            </div>
-                            <div class="code-block json">{
-  "success": true,
-  "count": 2,
-  "total": 25,
-  "page": 1,
-  "pages": 13,
-  "trails": [
-    {
-      "_id": "507f1f77bcf86cd799439013",
-      "name": "Everest Base Camp Trail",
-      "description": "Classic trek to Everest Base Camp starting point",
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [86.9250, 27.9881]
-      },
-      "properties": {
-        "name": "Everest Base Camp",
-        "region": "Khumbu"
-      },
-      "difficulty": "hard",
-      "length": 130,
-      "elevation": 5364,
-      "guideId": {
-        "_id": "507f1f77bcf86cd799439012",
-        "firstName": "Sherpa",
-        "lastName": "Tenzing",
-        "email": "tenzing@example.com"
-      },
-      "isActive": true,
-      "createdAt": "2024-11-10T10:30:00.000Z",
-      "updatedAt": "2024-11-10T10:30:00.000Z"
-    },
-    {
-      "_id": "507f1f77bcf86cd799439014",
-      "name": "Annapurna Circuit Trail",
-      "description": "Complete trekking route around Annapurna massif",
-      "type": "Feature",
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [
-          [84.3294, 28.2096],
-          [84.3500, 28.2200],
-          [84.3700, 28.2300]
-        ]
-      },
-      "difficulty": "moderate",
-      "length": 230,
-      "elevation": 5416,
-      "isActive": true,
-      "createdAt": "2024-11-09T15:20:00.000Z"
-    }
-  ]
-}</div>
                         </div>
                     </div>
                 </div>
@@ -2077,7 +1899,7 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/trail-info</span>
                     </div>
                     <div class="description">
-                        Create detailed trail information including location, difficulty, duration, altitude, environment, and user content. This endpoint is used to insert comprehensive trail details.
+                        Create detailed trail information including location, difficulty, duration, altitude, environment, and user content.
                     </div>
                     <div class="details">
                         <div class="detail-section">
@@ -2122,6 +1944,103 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                                         <td><span class="required">Yes</span></td>
                                         <td>Trail difficulty level</td>
                                     </tr>
+                                    <tr>
+                                        <td>location</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Specific location (e.g., "Pokhara, Nepal")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>time</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Time duration string (e.g., "5 Days")</td>
+                                    </tr>
+                                    <tr>
+                                        <td>activityType</td>
+                                        <td>String</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>"Hike", "Trekking", or "City Tour"</td>
+                                    </tr>
+                                    <tr>
+                                        <td>isFeatured</td>
+                                        <td>Boolean</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Mark as featured trail (default: false)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>duration_days</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Duration of the trail in days (minimum: 1)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>total_distance_km</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Total distance of the trail in kilometers</td>
+                                    </tr>
+                                    <tr>
+                                        <td>best_season</td>
+                                        <td>Array[String]</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Array of best seasons to visit (non-empty)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>major_highlights</td>
+                                        <td>Array[String]</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Array of major highlights/attractions (non-empty)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>starting_point</td>
+                                        <td>Object</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Starting point object with name and altitude_m</td>
+                                    </tr>
+                                    <tr>
+                                        <td>ending_point</td>
+                                        <td>Object</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Ending point object with name and altitude_m</td>
+                                    </tr>
+                                    <tr>
+                                        <td>altitude_min_m</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Minimum altitude in meters</td>
+                                    </tr>
+                                    <tr>
+                                        <td>altitude_max_m</td>
+                                        <td>Number</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Maximum altitude in meters</td>
+                                    </tr>
+                                    <tr>
+                                        <td>permit_required</td>
+                                        <td>Array[String]</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Array of required permits</td>
+                                    </tr>
+                                    <tr>
+                                        <td>environment</td>
+                                        <td>Object</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Environment details (wildlife, culture, etc.)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>user_content</td>
+                                        <td>Object</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>User ratings and content</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- ... rest of details ... -->
+                    </div>
+                </div>
+
                                     <tr>
                                         <td>duration_days</td>
                                         <td>Number</td>
@@ -2439,6 +2358,38 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                                     <li>Admin role (user must be authenticated as admin)</li>
                                 </ul>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Featured Trails -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/admin/trail-info/featured</span>
+                    </div>
+                    <div class="description">
+                        Get a list of featured trails with simplified details.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 2,
+  "trails": [
+    {
+      "id": "60d5ec...",
+      "name": "Annapurna Circuit",
+      "region": "Annapurna",
+      "country": "Nepal",
+      "difficulty": "Hard",
+      "duration_days": 14,
+      "activityType": "Trekking",
+      "image": "https://..."
+    }
+  ]
+}</div>
                         </div>
                     </div>
                 </div>

@@ -7,8 +7,9 @@ export const getAllTrails = async (req, res) => {
     const {
       page = 1,
       limit = 10,
-      isActive,
-      guideId,
+      fid,
+      id,
+      name,
       difficulty,
       search,
       sortBy = "createdAt",
@@ -17,13 +18,15 @@ export const getAllTrails = async (req, res) => {
 
     // Build query
     const query = {};
-    if (isActive !== undefined) query.isActive = isActive === "true";
-    if (guideId) query.guideId = guideId;
-    if (difficulty) query.difficulty = difficulty;
+    if (fid) query["properties.fid"] = parseInt(fid);
+    if (id) query["properties.id"] = parseInt(id);
+    if (name) query["properties.name"] = { $regex: name, $options: "i" };
+    if (difficulty) query["properties.difficulty"] = parseInt(difficulty);
+    
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { "properties.name": { $regex: search, $options: "i" } },
+        { "properties.description": { $regex: search, $options: "i" } },
       ];
     }
 
@@ -33,7 +36,6 @@ export const getAllTrails = async (req, res) => {
     sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
 
     const trails = await Trail.find(query)
-      .populate("guideId", "firstName lastName email")
       .sort(sortOptions)
       .limit(parseInt(limit))
       .skip(skip);
@@ -63,7 +65,7 @@ export const getTrailById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const trail = await Trail.findById(id).populate("guideId", "firstName lastName email");
+    const trail = await Trail.findById(id);
 
     if (!trail) {
       return res.status(404).json({
@@ -95,29 +97,21 @@ export const getTrailById = async (req, res) => {
 // CREATE TRAIL
 export const createTrail = async (req, res) => {
   try {
-    const { name, description, type, geometry, properties, difficulty, length, elevation, guideId, isActive } =
-      req.body;
+    const { type, geometry, properties } = req.body;
 
     // Validate required fields
-    if (!name || !geometry) {
+    if (!geometry || !geometry.type || !geometry.coordinates) {
       return res.status(400).json({
         success: false,
-        message: "Name and geometry are required",
+        message: "Geometry with type and coordinates are required",
       });
     }
 
     // Ensure type is "Feature" for valid GeoJSON
     const trailData = {
-      name,
-      description,
       type: type || "Feature",
       geometry,
       properties: properties || {},
-      difficulty,
-      length,
-      elevation,
-      guideId,
-      isActive: isActive !== undefined ? isActive : true,
     };
 
     // Create trail (validation happens in pre-save hook)
@@ -152,7 +146,7 @@ export const createTrail = async (req, res) => {
 export const updateTrail = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, geometry, properties, difficulty, length, elevation, guideId, isActive } = req.body;
+    const { type, geometry, properties } = req.body;
 
     const trail = await Trail.findById(id);
     if (!trail) {
@@ -164,20 +158,14 @@ export const updateTrail = async (req, res) => {
 
     // Update trail data
     const updateData = {};
-    if (name) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
+    if (type) updateData.type = type;
     if (geometry) updateData.geometry = geometry;
     if (properties) updateData.properties = properties;
-    if (difficulty) updateData.difficulty = difficulty;
-    if (length !== undefined) updateData.length = length;
-    if (elevation !== undefined) updateData.elevation = elevation;
-    if (guideId) updateData.guideId = guideId;
-    if (isActive !== undefined) updateData.isActive = isActive;
 
     const updatedTrail = await Trail.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
-    }).populate("guideId", "firstName lastName email");
+    });
 
     res.status(200).json({
       success: true,
