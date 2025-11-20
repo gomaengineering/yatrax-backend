@@ -333,6 +333,63 @@ export const createTrailInfo = async (req, res) => {
       });
     }
 
+    // Extract geometry and trailProperties from request body
+    let { geometry, trailProperties } = req.body;
+    
+    // Parse JSON strings if they come from FormData
+    try {
+      if (geometry && typeof geometry === 'string' && geometry.trim()) {
+        geometry = JSON.parse(geometry);
+      }
+      if (trailProperties && typeof trailProperties === 'string' && trailProperties.trim()) {
+        trailProperties = JSON.parse(trailProperties);
+      }
+    } catch (parseError) {
+      console.error('Error parsing geometry or trailProperties:', parseError);
+      return res.status(400).json({
+        success: false,
+        message: "Error parsing geometry or trailProperties. Please ensure they are valid JSON.",
+        error: parseError.message,
+      });
+    }
+
+    // STEP 1: Create Trail FIRST if geometry is provided (AUTOMATIC FOREIGN KEY SYNCING)
+    let trail = null;
+
+    if (geometry && geometry.type && geometry.coordinates) {
+      // Create Trail from provided geometry automatically
+      try {
+        const trailData = {
+          type: "Feature",
+          geometry,
+          properties: trailProperties || {},
+        };
+        
+        trail = await Trail.create(trailData);
+        trailId = trail._id; // Automatically extract trailId from created Trail
+        console.log("✅ Trail created automatically with ID:", trailId);
+      } catch (trailError) {
+        console.error("Error creating Trail:", trailError);
+        return res.status(400).json({
+          success: false,
+          message: "Failed to create Trail from provided geometry",
+          error: trailError.message,
+        });
+      }
+    } else if (trailId) {
+      // If trailId is provided explicitly, verify Trail exists
+      trail = await Trail.findById(trailId);
+      if (!trail) {
+        return res.status(404).json({
+          success: false,
+          message: "Trail not found with provided trailId",
+        });
+      }
+      // console.log("✅ Using existing Trail with ID:", trailId);
+    }
+    // If neither geometry nor trailId is provided, trailId will be null
+    // This allows TrailInfo to exist without Trail initially
+
     // Prepare trail info data
     const trailInfoData = {
       name,
@@ -376,27 +433,30 @@ export const createTrailInfo = async (req, res) => {
     // Create trail info
     const newTrailInfo = await TrailInfo.create(trailInfoData);
 
-    // Link to Trail model if trailId is provided
-    if (trailId) {
-      const trail = await Trail.findById(trailId);
-      if (trail) {
-        // Update Trail properties with trailInfoId and activityType
-        const properties = trail.properties || {};
-        properties.trailInfoId = newTrailInfo._id;
-        if (activityType) {
-          properties.activityType = activityType;
-        }
-        
-        // Use markModified because properties is Mixed type
-        trail.markModified('properties');
-        await trail.save();
+    // STEP 2: Automatically sync back to Trail (bidirectional linking)
+    if (trailId && trail) {
+      // Update Trail properties with trailInfoId and activityType
+      const properties = trail.properties || {};
+      properties.trailInfoId = newTrailInfo._id;
+      if (activityType) {
+        properties.activityType = activityType;
       }
+      
+      // Use markModified because properties is Mixed type
+      trail.markModified('properties');
+      await trail.save();
+      // console.log("✅ Trail automatically synced with TrailInfo ID:", newTrailInfo._id);
     }
 
     res.status(201).json({
       success: true,
       message: "Trail info created successfully",
       trailInfo: newTrailInfo,
+      trail: trail ? {
+        _id: trail._id,
+        type: trail.type,
+        geometry: trail.geometry,
+      } : null,
     });
   } catch (error) {
     console.error("Create trail info error:", error);
