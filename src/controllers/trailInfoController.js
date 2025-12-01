@@ -481,7 +481,7 @@ export const createTrailInfo = async (req, res) => {
 export const updateTrailInfo = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
+    let {
       name,
       region,
       country,
@@ -504,6 +504,71 @@ export const updateTrailInfo = async (req, res) => {
       isFeatured,
       trailId,
     } = req.body;
+
+    // Parse JSON strings if they come from FormData
+    // FormData sends nested objects as JSON strings
+    // If they're already objects (from JSON request), keep them as is
+    try {
+      if (best_season && typeof best_season === 'string' && best_season.trim()) {
+        best_season = JSON.parse(best_season);
+      }
+      if (major_highlights && typeof major_highlights === 'string' && major_highlights.trim()) {
+        major_highlights = JSON.parse(major_highlights);
+      }
+      if (starting_point && typeof starting_point === 'string' && starting_point.trim()) {
+        starting_point = JSON.parse(starting_point);
+      }
+      if (ending_point && typeof ending_point === 'string' && ending_point.trim()) {
+        ending_point = JSON.parse(ending_point);
+      }
+      if (permit_required && typeof permit_required === 'string' && permit_required.trim()) {
+        permit_required = JSON.parse(permit_required);
+      }
+      if (environment && typeof environment === 'string' && environment.trim()) {
+        environment = JSON.parse(environment);
+      }
+      if (user_content && typeof user_content === 'string' && user_content.trim()) {
+        user_content = JSON.parse(user_content);
+      }
+      // Parse numeric values that might come as strings from FormData
+      if (duration_days !== undefined && typeof duration_days === 'string') {
+        duration_days = parseInt(duration_days, 10);
+      }
+      if (total_distance_km !== undefined && typeof total_distance_km === 'string') {
+        total_distance_km = parseFloat(total_distance_km);
+      }
+      if (altitude_min_m !== undefined && typeof altitude_min_m === 'string') {
+        altitude_min_m = parseFloat(altitude_min_m);
+      }
+      if (altitude_max_m !== undefined && typeof altitude_max_m === 'string') {
+        altitude_max_m = parseFloat(altitude_max_m);
+      }
+      if (isFeatured !== undefined && typeof isFeatured === 'string') {
+        isFeatured = isFeatured === 'true';
+      }
+      
+      // Ensure starting_point and ending_point are objects after parsing
+      if (starting_point && typeof starting_point === 'object') {
+        // Ensure nested numeric values are properly typed
+        if (starting_point.altitude_m !== undefined && typeof starting_point.altitude_m === 'string') {
+          starting_point.altitude_m = parseFloat(starting_point.altitude_m);
+        }
+      }
+      if (ending_point && typeof ending_point === 'object') {
+        // Ensure nested numeric values are properly typed
+        if (ending_point.altitude_m !== undefined && typeof ending_point.altitude_m === 'string') {
+          ending_point.altitude_m = parseFloat(ending_point.altitude_m);
+        }
+      }
+    } catch (parseError) {
+      console.error('Error parsing FormData fields:', parseError);
+      console.error('Request body:', req.body);
+      return res.status(400).json({
+        success: false,
+        message: "Error parsing request data. Please ensure all fields are properly formatted.",
+        error: parseError.message,
+      });
+    }
 
     // Check if trail info exists
     const trailInfo = await TrailInfo.findById(id);
