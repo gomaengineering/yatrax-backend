@@ -1899,7 +1899,8 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/trail-info</span>
                     </div>
                     <div class="description">
-                        Create detailed trail information including location, difficulty, duration, altitude, environment, and user content.
+                        Create detailed trail information including location, difficulty, duration, altitude, environment, and user content. 
+                        <strong>Automatic Foreign Key Syncing:</strong> If <code>geometry</code> is provided, a Trail (GeoJSON) will be automatically created first, and its ID will be used as the <code>trailId</code> foreign key. The frontend does not need to send <code>trailId</code> - it's automatically extracted after the GeoJSON is saved.
                     </div>
                     <div class="details">
                         <div class="detail-section">
@@ -1969,10 +1970,22 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                                         <td>Mark as featured trail (default: false)</td>
                                     </tr>
                                     <tr>
+                                        <td>geometry</td>
+                                        <td>Object</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>GeoJSON geometry object. If provided, a Trail will be automatically created and its ID used as trailId. Format: <code>{"type": "LineString", "coordinates": [[lng, lat], ...]}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td>trailProperties</td>
+                                        <td>Object</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Additional properties for the automatically created Trail (used when geometry is provided)</td>
+                                    </tr>
+                                    <tr>
                                         <td>trailId</td>
                                         <td>String</td>
                                         <td><span class="optional">Optional</span></td>
-                                        <td>ID of the associated Trail (GeoJSON)</td>
+                                        <td>ID of an existing Trail (GeoJSON). If not provided and geometry is provided, trailId will be automatically extracted from the newly created Trail.</td>
                                     </tr>
                                     <tr>
                                         <td>duration_days</td>
@@ -2177,7 +2190,7 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                             </table>
                         </div>
                         <div class="detail-section">
-                            <div class="detail-title">Request Example</div>
+                            <div class="detail-title">Request Example (with automatic Trail creation)</div>
                             <div class="code-block json">{
   "name": "Everest Base Camp Trek",
   "region": "Khumbu",
@@ -2222,8 +2235,25 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
   "user_content": {
     "rating_avg": 4.8,
     "rating_count": 1250
+  },
+  "activityType": "Trekking",
+  "isFeatured": true,
+  "geometry": {
+    "type": "LineString",
+    "coordinates": [
+      [86.71, 27.80],
+      [86.72, 27.81],
+      [86.73, 27.82]
+    ]
+  },
+  "trailProperties": {
+    "name": "Everest Base Camp Trek",
+    "fid": 1
   }
 }</div>
+                            <div class="description" style="margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 5px;">
+                                <strong>Note:</strong> When <code>geometry</code> is provided, a Trail (GeoJSON) is automatically created first. The <code>trailId</code> foreign key is automatically extracted from the created Trail's ID - you don't need to send it. The Trail's properties are also automatically updated with the TrailInfo's ID for bidirectional linking.
+                            </div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">cURL Test Command</div>
@@ -2272,6 +2302,7 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
     "description": "A classic trek to the base of the world's highest mountain...",
     "difficulty": "hard",
     "duration_days": 14,
+    "trailId": "507f1f77bcf86cd799439015",
     "total_distance_km": 130,
     "best_season": ["March", "April", "May", "October", "November"],
     "major_highlights": [
@@ -2307,8 +2338,23 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
     },
     "createdAt": "2024-11-10T10:30:00.000Z",
     "updatedAt": "2024-11-10T10:30:00.000Z"
+  },
+  "trail": {
+    "_id": "507f1f77bcf86cd799439015",
+    "type": "Feature",
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [
+        [86.71, 27.80],
+        [86.72, 27.81],
+        [86.73, 27.82]
+      ]
+    }
   }
 }</div>
+                            <div class="description" style="margin-top: 10px; padding: 10px; background: #e8f4f8; border-radius: 5px;">
+                                <strong>Response Note:</strong> When <code>geometry</code> is provided in the request, the response includes a <code>trail</code> object containing the automatically created Trail (GeoJSON) with its <code>_id</code>, <code>type</code>, and <code>geometry</code>. The <code>trailId</code> in <code>trailInfo</code> is automatically synced from this Trail's <code>_id</code>.
+                            </div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Error Response Examples</div>
@@ -2334,6 +2380,20 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
 {
   "success": false,
   "message": "best_season must be a non-empty array"
+}
+
+// 400 Bad Request - Invalid geometry format
+{
+  "success": false,
+  "message": "Error parsing geometry or trailProperties. Please ensure they are valid JSON.",
+  "error": "Unexpected token in JSON at position X"
+}
+
+// 400 Bad Request - Failed to create Trail from geometry
+{
+  "success": false,
+  "message": "Failed to create Trail from provided geometry",
+  "error": "Geometry validation error details"
 }
 
 // 401 Unauthorized - Missing or invalid token
@@ -2407,9 +2467,30 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/trail-info</span>
                     </div>
                     <div class="description">
-                        Get all trail information records. Returns a list of all trail info sorted by creation date (newest first).
+                        Get all trail information records. Returns a list of all trail info sorted by creation date (newest first). Supports filtering by featured status.
                     </div>
                     <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>isFeatured</td>
+                                        <td>Boolean (string)</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by featured status. Use <code>?isFeatured=true</code> or <code>?isFeatured=false</code></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
                             <div>
@@ -2531,7 +2612,8 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/trail-info/:id</span>
                     </div>
                     <div class="description">
-                        Update an existing trail information record. All fields are optional - only provided fields will be updated (partial update).
+                        Update an existing trail information record. All fields are optional - only provided fields will be updated (partial update). 
+                        <strong>Trail Linking:</strong> You can update the <code>trailId</code> to link this TrailInfo to an existing Trail. The linked Trail's properties will be automatically updated with the TrailInfo's ID and activityType for bidirectional linking.
                     </div>
                     <div class="details">
                         <div class="detail-section">
