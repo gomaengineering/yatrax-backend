@@ -19,7 +19,7 @@ const router = express.Router();
 // Trail Info Routes
 router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
 router.get("/:id", getTrailInfoById);
-router.get("/", protect, adminOnly, getAllTrailInfo);
+router.get("/", getAllTrailInfo);
 // Use optionalUpload to allow both file upload (field: 'image') or imageUrl in body
 // Use 'trail-info' folder for Cloudinary uploads
 router.post("/", protect, adminOnly, optionalUpload.any(), createUploadToCloudinary('trail-info'), createTrailInfo);
