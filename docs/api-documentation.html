@@ -1552,79 +1552,40 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/users</span>
                     </div>
                     <div class="description">
-                        Get all users with pagination, filtering, and search capabilities.
+                        Get all users. Returns all users sorted by creation date (newest first). No pagination or filtering - returns complete list.
                     </div>
                     <div class="details">
-                        <div class="detail-section">
-                            <div class="detail-title">Query Parameters</div>
-                            <table class="param-table">
-                                <thead>
-                                    <tr>
-                                        <th>Parameter</th>
-                                        <th>Type</th>
-                                        <th>Required</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>page</td>
-                                        <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Page number (default: 1)</td>
-                                    </tr>
-                                    <tr>
-                                        <td>limit</td>
-                                        <td>Number</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Items per page (default: 10)</td>
-                                    </tr>
-                                    <tr>
-                                        <td>role</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by role: "user", "porter", "admin"</td>
-                                    </tr>
-                                    <tr>
-                                        <td>subscription</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by subscription: "free", "premium"</td>
-                                    </tr>
-                                    <tr>
-                                        <td>search</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Search in firstName, lastName, email</td>
-                                    </tr>
-                                    <tr>
-                                        <td>sortBy</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Sort field (default: "createdAt")</td>
-                                    </tr>
-                                    <tr>
-                                        <td>sortOrder</td>
-                                        <td>String</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>"asc" or "desc" (default: "desc")</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
                             <div>
                                 <span class="response-code success">200 OK</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                                <span class="response-code error">500 Server Error</span>
                             </div>
                             <div class="code-block json">{
   "success": true,
-  "count": 10,
-  "total": 150,
-  "page": 1,
-  "pages": 15,
-  "users": [...]
+  "count": 150,
+  "users": [
+    {
+      "_id": "507f1f77bcf86cd799439011",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "country": "Nepal",
+      "role": "user",
+      "subscription": "free",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    },
+    ...
+  ]
 }</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/users \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
                         </div>
                     </div>
                 </div>
@@ -1766,12 +1727,46 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                         <span class="endpoint">/api/admin/guides</span>
                     </div>
                     <div class="description">
-                        Get all guides with pagination, filtering, and search capabilities.
+                        Get all guides. Returns all guides without pagination or filtering.
                     </div>
                     <div class="details">
                         <div class="detail-section">
-                            <div class="detail-title">Query Parameters</div>
-                            <div class="description">Similar to users endpoint: page, limit, role, search, sortBy, sortOrder</div>
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">401 Unauthorized</span>
+                                <span class="response-code error">403 Forbidden</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 25,
+  "guides": [
+    {
+      "_id": "507f1f77bcf86cd799439021",
+      "firstName": "Sherpa",
+      "lastName": "Tenzing",
+      "email": "tenzing@example.com",
+      "description": "Experienced mountain guide...",
+      "TBNumber": "TB12345",
+      "trekAreas": ["Everest", "Annapurna"],
+      "experience": 10,
+      "education": "Mountain Guide Certification",
+      "languages": ["English", "Nepali", "Sherpa"],
+      "ratePerDay": 50,
+      "certifications": ["UIAGM", "IFMGA"],
+      "role": "guide",
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-01-10T08:00:00.000Z"
+    },
+    ...
+  ]
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/guides \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
                         </div>
                     </div>
                 </div>
