@@ -138,6 +138,9 @@ export const getAllTrails = async (req, res) => {
       .skip(skip)
       .sort({ createdAt: -1 });
 
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
+
     const total = await Trail.countDocuments(query);
 
     res.status(200).json({
@@ -171,6 +174,9 @@ export const getTrailById = async (req, res) => {
         message: "Trail not found",
       });
     }
+
+    // Populate TrailInfo if trailInfoId exists
+    await trail.populateTrailInfo();
 
     res.status(200).json({
       success: true,
@@ -325,6 +331,9 @@ export const findTrailsNear = async (req, res) => {
     })
       .limit(parseInt(limit));
 
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
+
     res.status(200).json({
       success: true,
       count: trails.length,
@@ -366,6 +375,9 @@ export const findTrailsWithin = async (req, res) => {
         },
       },
     });
+
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
 
     res.status(200).json({
       success: true,
@@ -418,6 +430,9 @@ export const findTrailsWithinRadius = async (req, res) => {
     })
       .limit(parseInt(limit));
 
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
+
     res.status(200).json({
       success: true,
       count: trails.length,
@@ -452,6 +467,9 @@ export const findTrailsIntersecting = async (req, res) => {
         },
       },
     });
+
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
 
     res.status(200).json({
       success: true,
