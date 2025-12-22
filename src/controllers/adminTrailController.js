@@ -40,6 +40,9 @@ export const getAllTrails = async (req, res) => {
       .limit(parseInt(limit))
       .skip(skip);
 
+    // Populate TrailInfo for all trails
+    await Trail.populateTrailInfo(trails);
+
     const total = await Trail.countDocuments(query);
 
     res.status(200).json({
@@ -73,6 +76,9 @@ export const getTrailById = async (req, res) => {
         message: "Trail not found",
       });
     }
+
+    // Populate TrailInfo if trailInfoId exists
+    await trail.populateTrailInfo();
 
     res.status(200).json({
       success: true,

@@ -188,6 +188,38 @@ trailSchema.methods.toGeoJSONFeature = function() {
   };
 };
 
+// Instance method to populate TrailInfo
+trailSchema.methods.populateTrailInfo = async function() {
+  if (this.properties && this.properties.trailInfoId) {
+    const TrailInfo = mongoose.model('TrailInfo');
+    this.trailInfo = await TrailInfo.findById(this.properties.trailInfoId);
+  }
+  return this;
+};
+
+// Static method to populate TrailInfo for multiple trails
+trailSchema.statics.populateTrailInfo = async function(trails) {
+  const TrailInfo = mongoose.model('TrailInfo');
+  const trailInfoIds = trails
+    .map(trail => trail.properties?.trailInfoId)
+    .filter(id => id != null);
+  
+  if (trailInfoIds.length === 0) {
+    return trails;
+  }
+  
+  const trailInfos = await TrailInfo.find({ _id: { $in: trailInfoIds } });
+  const trailInfoMap = new Map(trailInfos.map(info => [info._id.toString(), info]));
+  
+  trails.forEach(trail => {
+    if (trail.properties?.trailInfoId) {
+      trail.trailInfo = trailInfoMap.get(trail.properties.trailInfoId.toString()) || null;
+    }
+  });
+  
+  return trails;
+};
+
 const Trail = mongoose.model("Trail", trailSchema);
 export default Trail;
 
