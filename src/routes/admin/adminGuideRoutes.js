@@ -1,4 +1,4 @@
-// routes/adminGuideRoutes.js
+// routes/admin/adminGuideRoutes.js
 import express from "express";
 import {
   getAllGuides,
@@ -6,8 +6,8 @@ import {
   createGuide,
   updateGuide,
   deleteGuide,
-} from "../controllers/adminGuideController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+} from "../../controllers/admin/adminGuideController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 

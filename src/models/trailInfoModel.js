@@ -146,6 +146,6 @@ trailInfoSchema.index({ activityType: 1 });
 trailInfoSchema.index({ location: 1 });
 trailInfoSchema.index({ trailId: 1 });
 
-const TrailInfo = mongoose.model("TrailInfo", trailInfoSchema);
+const TrailInfo = mongoose.models.TrailInfo || mongoose.model("TrailInfo", trailInfoSchema);
 export default TrailInfo;
 

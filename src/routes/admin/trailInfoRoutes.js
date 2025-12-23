@@ -1,25 +1,20 @@
-// routes/trailInfoRoutes.js
+// routes/admin/trailInfoRoutes.js
 import express from "express";
 import {
-  getAllTrailInfo,
-  getFeaturedTrails,
-  getTrailInfoById,
   createTrailInfo,
   updateTrailInfo,
   deleteTrailInfo,
-} from "../controllers/trailInfoController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
-import { optionalUpload, createUploadToCloudinary } from "../utils/cloudinary.js";
+} from "../../controllers/admin/adminTrailInfoController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
+import { optionalUpload, createUploadToCloudinary } from "../../utils/cloudinary.js";
+import { getAllTrailInfo, getFeaturedTrails, getTrailInfoById } from "../../controllers/web/trailInfoController.js";
 
 const router = express.Router();
 
-// All routes require authentication and admin role
-// router.use(protect, adminOnly);
-
-// Trail Info Routes
 router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
 router.get("/:id", getTrailInfoById);
 router.get("/", getAllTrailInfo);
+// Admin-only Trail Info Management Routes (Create, Update, Delete)
 // Use optionalUpload to allow both file upload (field: 'image') or imageUrl in body
 // Use 'trail-info' folder for Cloudinary uploads
 router.post("/", protect, adminOnly, optionalUpload.any(), createUploadToCloudinary('trail-info'), createTrailInfo);

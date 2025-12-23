@@ -1,4 +1,4 @@
-// routes/adminTrailRoutes.js
+// routes/admin/adminTrailRoutes.js
 import express from "express";
 import {
   getAllTrails,
@@ -6,8 +6,8 @@ import {
   createTrail,
   updateTrail,
   deleteTrail,
-} from "../controllers/adminTrailController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+} from "../../controllers/admin/adminTrailController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 

@@ -1,4 +1,4 @@
-// routes/adminUserRoutes.js
+// routes/admin/adminUserRoutes.js
 import express from "express";
 import {
   getAllUsers,
@@ -6,8 +6,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-} from "../controllers/adminUserController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+} from "../../controllers/admin/adminUserController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 

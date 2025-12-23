@@ -4,15 +4,19 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
 import dotenv from 'dotenv';
-import userRoutes from './routes/userAuthRoutes.js';
-import guideRoutes from './routes/guideAuthRoutes.js';
-import trailRoutes from './routes/trailRoutes.js';
-import adminAuthRoutes from './routes/adminAuthRoutes.js';
-import adminUserRoutes from './routes/adminUserRoutes.js';
-import adminGuideRoutes from './routes/adminGuideRoutes.js';
-import adminTrailRoutes from './routes/adminTrailRoutes.js';
-import adminStatsRoutes from './routes/adminStatsRoutes.js';
-import trailInfoRoutes from './routes/trailInfoRoutes.js';
+// Web Routes
+import userRoutes from './routes/web/userAuthRoutes.js';
+import guideRoutes from './routes/web/guideAuthRoutes.js';
+import trailRoutes from './routes/web/trailRoutes.js';
+import trailInfoRoutes from './routes/web/trailInfoRoutes.js';
+
+// Admin Routes
+import adminAuthRoutes from './routes/admin/adminAuthRoutes.js';
+import adminUserRoutes from './routes/admin/adminUserRoutes.js';
+import adminGuideRoutes from './routes/admin/adminGuideRoutes.js';
+import adminTrailRoutes from './routes/admin/adminTrailRoutes.js';
+import adminStatsRoutes from './routes/admin/adminStatsRoutes.js';
+import adminTrailInfoRoutes from './routes/admin/trailInfoRoutes.js';
 
 dotenv.config();
 
@@ -44,12 +48,14 @@ app.get('/api-docs', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
 });
 
-app.use("/api/auth/user", userRoutes);
-app.use("/api/auth/guide", guideRoutes);
-app.use("/api/trails", trailRoutes);
+// Web API Routes
+app.use("/api/web/auth/user", userRoutes);
+app.use("/api/web/auth/guide", guideRoutes);
+app.use("/api/web/trails", trailRoutes);
+app.use("/api/web/trail-info", trailInfoRoutes);
 
-// Admin Routes
-app.use("/api/admin/trail-info", trailInfoRoutes);
+// Admin API Routes
+app.use("/api/admin/trail-info", adminTrailInfoRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/guides", adminGuideRoutes);

@@ -95,5 +95,6 @@ guideSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const Guide = mongoose.model("Guide", guideSchema);
+const Guide = mongoose.models.Guide || mongoose.model("Guide", guideSchema);
 export default Guide;
+
