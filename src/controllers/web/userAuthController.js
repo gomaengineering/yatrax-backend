@@ -1,6 +1,6 @@
-import User from "../models/userModel.js";
-import generateToken from "../utils/generateToken.js";
-import { oauth2Client } from "../utils/googleConfig.js";
+import User from "../../models/userModel.js";
+import generateToken from "../../utils/generateToken.js";
+import { oauth2Client } from "../../utils/googleConfig.js";
 
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
@@ -211,3 +211,4 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
+

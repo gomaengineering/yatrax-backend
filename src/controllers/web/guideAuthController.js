@@ -1,5 +1,5 @@
-import Guide from "../models/guideModel.js";
-import generateToken from "../utils/generateToken.js";
+import Guide from "../../models/guideModel.js";
+import generateToken from "../../utils/generateToken.js";
 
 //  REGISTER GUIDE
 export const registerGuide = async (req, res) => {

@@ -108,3 +108,44 @@ export const authorize = (...roles) => {
   };
 };
 
+// Optional authentication - sets req.user if token is valid, but doesn't fail if missing
+// Useful for endpoints that can work with or without authentication
+export const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Check for token in headers
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+
+    if (token) {
+      try {
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Find user or guide based on role
+        let user = null;
+        if (decoded.role === "admin" || decoded.role === "user" || decoded.role === "porter") {
+          user = await User.findById(decoded.id);
+        } else if (decoded.role === "guide") {
+          user = await Guide.findById(decoded.id);
+        }
+
+        if (user) {
+          req.user = user;
+          req.userId = decoded.id;
+          req.userRole = decoded.role;
+        }
+      } catch (error) {
+        // Token invalid, but don't fail - just continue without setting req.user
+      }
+    }
+
+    next();
+  } catch (error) {
+    // Don't fail on error, just continue
+    next();
+  }
+};
+

@@ -1,5 +1,5 @@
-// controllers/adminGuideController.js
-import Guide from "../models/guideModel.js";
+// controllers/admin/adminGuideController.js
+import Guide from "../../models/guideModel.js";
 
 // GET ALL GUIDES
 export const getAllGuides = async (req, res) => {

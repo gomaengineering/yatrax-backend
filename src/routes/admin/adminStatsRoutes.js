@@ -1,7 +1,7 @@
-// routes/adminStatsRoutes.js
+// routes/admin/adminStatsRoutes.js
 import express from "express";
-import { getDashboardStats } from "../controllers/adminStatsController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import { getDashboardStats } from "../../controllers/admin/adminStatsController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
