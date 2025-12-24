@@ -18,6 +18,12 @@ import adminTrailRoutes from './routes/admin/adminTrailRoutes.js';
 import adminStatsRoutes from './routes/admin/adminStatsRoutes.js';
 import adminTrailInfoRoutes from './routes/admin/trailInfoRoutes.js';
 
+// App Routes
+import appAuthRoutes from './routes/app/auth.routes.js';
+import appUserRoutes from './routes/app/user.routes.js';
+import { appRateLimiter } from './middleware/appRateLimiter.js';
+import { appErrorHandler } from './middleware/appErrorHandler.js';
+
 dotenv.config();
 
 const app = express();
@@ -48,6 +54,10 @@ app.get('/api-docs', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
 });
 
+app.get('/api-docs/app', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/app-api-swagger.html'));
+});
+
 // Web API Routes
 app.use("/api/web/auth/user", userRoutes);
 app.use("/api/web/auth/guide", guideRoutes);
@@ -62,9 +72,18 @@ app.use("/api/admin/guides", adminGuideRoutes);
 app.use("/api/admin/trails", adminTrailRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
 
+// App API Routes - Apply global rate limiting to all app routes
+app.use("/api/v1/app", appRateLimiter);
+app.use("/api/v1/app/auth", appAuthRoutes);
+app.use("/api/v1/app", appUserRoutes);
+
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
   if (error.type === 'entity.too.large' || error.name === 'PayloadTooLargeError') {
+    // Use app error handler for app routes, otherwise use default
+    if (req.path.startsWith("/api/v1/app")) {
+      return appErrorHandler(error, req, res, next);
+    }
     return res.status(413).json({
       success: false,
       message: 'Request entity too large. Maximum size is 50MB.',
@@ -73,7 +92,10 @@ app.use((error, req, res, next) => {
   next(error);
 });
 
-// Global error handler
+// App-specific error handler (must be before global handler)
+app.use(appErrorHandler);
+
+// Global error handler (for non-app routes)
 app.use((error, req, res, next) => {
   console.error('Error:', error);
   res.status(error.status || 500).json({
