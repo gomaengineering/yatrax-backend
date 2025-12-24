@@ -270,6 +270,7 @@
                     <li><a href="#user-auth">User Authentication APIs</a></li>
                     <li><a href="#guide-auth">Guide Authentication APIs</a></li>
                     <li><a href="#trail-apis">Trail & GeoJSON APIs</a></li>
+                    <li><a href="#trail-info-apis">Trail Info APIs (Public)</a></li>
                     <li><a href="#admin-apis">Admin APIs</a></li>
                 </ul>
             </div>
@@ -282,7 +283,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/auth/user/register</span>
+                        <span class="endpoint">/api/web/auth/user/register</span>
                     </div>
                     <div class="description">
                         Register a new user account. Creates a user with email and password authentication.
@@ -393,7 +394,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/auth/user/login</span>
+                        <span class="endpoint">/api/web/auth/user/login</span>
                     </div>
                     <div class="description">
                         Login with email and password. Returns a JWT token for authenticated requests.
@@ -462,7 +463,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/auth/user/google-login</span>
+                        <span class="endpoint">/api/web/auth/user/google-login</span>
                     </div>
                     <div class="description">
                         Login or register using Google OAuth. Accepts Google ID token and creates/authenticates user.
@@ -530,7 +531,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/auth/guide/register</span>
+                        <span class="endpoint">/api/web/auth/guide/register</span>
                     </div>
                     <div class="description">
                         Register a new guide account. Guides are trekking/tour guides with detailed profile information.
@@ -688,7 +689,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/auth/guide/login</span>
+                        <span class="endpoint">/api/web/auth/guide/login</span>
                     </div>
                     <div class="description">
                         Login as a guide with email and password. Returns a JWT token for authenticated requests.
@@ -768,7 +769,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/trails</span>
+                        <span class="endpoint">/api/web/trails</span>
                     </div>
                     <div class="description">
                         Create a new trail using a standard GeoJSON Feature.
@@ -838,7 +839,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/trails/feature-collection</span>
+                        <span class="endpoint">/api/web/trails/feature-collection</span>
                     </div>
                     <div class="description">
                         Import multiple trails from a GeoJSON FeatureCollection.
@@ -875,7 +876,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method get">GET</span>
-                        <span class="endpoint">/api/trails</span>
+                        <span class="endpoint">/api/web/trails</span>
                     </div>
                     <div class="description">
                         Get all trails with pagination and property filtering.
@@ -927,7 +928,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method get">GET</span>
-                        <span class="endpoint">/api/trails/:id</span>
+                        <span class="endpoint">/api/web/trails/:id</span>
                     </div>
                     <div class="description">
                         Get a specific trail by its ID.
@@ -969,7 +970,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method get">GET</span>
-                        <span class="endpoint">/api/trails/near/point</span>
+                        <span class="endpoint">/api/web/trails/near/point</span>
                     </div>
                     <div class="description">
                         Find trails near a specific point using geospatial queries.
@@ -1022,7 +1023,7 @@
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Request Example</div>
-                            <div class="code-block">GET /api/trails/near/point?longitude=86.9250&latitude=27.9881&maxDistance=5000</div>
+                            <div class="code-block">GET /api/web/trails/near/point?longitude=86.9250&latitude=27.9881&maxDistance=5000</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Response</div>
@@ -1039,7 +1040,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/trails/within/polygon</span>
+                        <span class="endpoint">/api/web/trails/within/polygon</span>
                     </div>
                     <div class="description">
                         Find trails within a specified polygon area.
@@ -1096,7 +1097,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method get">GET</span>
-                        <span class="endpoint">/api/trails/within/radius</span>
+                        <span class="endpoint">/api/web/trails/within/radius</span>
                     </div>
                     <div class="description">
                         Find trails within a circular area (radius in kilometers).
@@ -1143,7 +1144,7 @@
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Request Example</div>
-                            <div class="code-block">GET /api/trails/within/radius?longitude=86.9250&latitude=27.9881&radius=25</div>
+                            <div class="code-block">GET /api/web/trails/within/radius?longitude=86.9250&latitude=27.9881&radius=25</div>
                         </div>
                     </div>
                 </div>
@@ -1152,7 +1153,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method post">POST</span>
-                        <span class="endpoint">/api/trails/intersecting</span>
+                        <span class="endpoint">/api/web/trails/intersecting</span>
                     </div>
                     <div class="description">
                         Find trails that intersect with a specified geometry (Point, LineString, Polygon, etc.).
@@ -1194,7 +1195,7 @@
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">cURL Test Command</div>
-                            <div class="code-block">curl -X POST http://localhost:3000/api/trails/intersecting \
+                            <div class="code-block">curl -X POST http://localhost:3000/api/web/trails/intersecting \
   -H "Content-Type: application/json" \
   -d '{
     "geometry": {
@@ -1254,7 +1255,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method put">PUT</span>
-                        <span class="endpoint">/api/trails/:id</span>
+                        <span class="endpoint">/api/web/trails/:id</span>
                     </div>
                     <div class="description">
                         Update an existing trail. All fields are optional in the request body.
@@ -1297,7 +1298,7 @@
                 <div class="api-card">
                     <div class="api-header">
                         <span class="method delete">DELETE</span>
-                        <span class="endpoint">/api/trails/:id</span>
+                        <span class="endpoint">/api/web/trails/:id</span>
                     </div>
                     <div class="description">
                         Delete a trail by its ID.
@@ -1351,7 +1352,7 @@
                         <div class="detail-section">
                             <div class="detail-title">Step 1: Create Test Trails</div>
                             <div class="code-block">// Create a Point trail (Everest Base Camp)
-curl -X POST http://localhost:3000/api/trails \
+curl -X POST http://localhost:3000/api/web/trails \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Everest Base Camp",
@@ -1363,7 +1364,7 @@ curl -X POST http://localhost:3000/api/trails \
   }'
 
 // Create a LineString trail (Annapurna Circuit)
-curl -X POST http://localhost:3000/api/trails \
+curl -X POST http://localhost:3000/api/web/trails \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Annapurna Circuit",
@@ -1380,29 +1381,29 @@ curl -X POST http://localhost:3000/api/trails \
                         <div class="detail-section">
                             <div class="detail-title">Step 2: Test CRUD Operations</div>
                             <div class="code-block">// Get all trails
-curl -X GET http://localhost:3000/api/trails
+curl -X GET http://localhost:3000/api/web/trails
 
 // Get specific trail (replace ID with actual ID from step 1)
-curl -X GET http://localhost:3000/api/trails/TRAIL_ID_HERE
+curl -X GET http://localhost:3000/api/web/trails/TRAIL_ID_HERE
 
 // Update trail
-curl -X PUT http://localhost:3000/api/trails/TRAIL_ID_HERE \
+curl -X PUT http://localhost:3000/api/web/trails/TRAIL_ID_HERE \
   -H "Content-Type: application/json" \
   -d '{"description": "Updated description", "difficulty": "expert"}'
 
 // Delete trail
-curl -X DELETE http://localhost:3000/api/trails/TRAIL_ID_HERE</div>
+curl -X DELETE http://localhost:3000/api/web/trails/TRAIL_ID_HERE</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Step 3: Test Geospatial Queries</div>
                             <div class="code-block">// Find trails near Kathmandu (within 50km)
-curl -X GET "http://localhost:3000/api/trails/near/point?longitude=85.3240&latitude=27.7172&maxDistance=50000"
+curl -X GET "http://localhost:3000/api/web/trails/near/point?longitude=85.3240&latitude=27.7172&maxDistance=50000"
 
 // Find trails within radius of Pokhara (25km)
-curl -X GET "http://localhost:3000/api/trails/within/radius?longitude=83.9856&latitude=28.2096&radius=25"
+curl -X GET "http://localhost:3000/api/web/trails/within/radius?longitude=83.9856&latitude=28.2096&radius=25"
 
 // Find trails within polygon (Kathmandu Valley area)
-curl -X POST http://localhost:3000/api/trails/within/polygon \
+curl -X POST http://localhost:3000/api/web/trails/within/polygon \
   -H "Content-Type: application/json" \
   -d '{
     "polygon": {
@@ -1412,7 +1413,7 @@ curl -X POST http://localhost:3000/api/trails/within/polygon \
   }'
 
 // Find trails intersecting with a line
-curl -X POST http://localhost:3000/api/trails/intersecting \
+curl -X POST http://localhost:3000/api/web/trails/intersecting \
   -H "Content-Type: application/json" \
   -d '{
     "geometry": {
@@ -1424,13 +1425,13 @@ curl -X POST http://localhost:3000/api/trails/intersecting \
                         <div class="detail-section">
                             <div class="detail-title">Step 4: Test Filtering & Pagination</div>
                             <div class="code-block">// Filter by difficulty
-curl -X GET "http://localhost:3000/api/trails?difficulty=moderate"
+curl -X GET "http://localhost:3000/api/web/trails?difficulty=moderate"
 
 // Pagination
-curl -X GET "http://localhost:3000/api/trails?page=1&limit=5"
+curl -X GET "http://localhost:3000/api/web/trails?page=1&limit=5"
 
 // Combined filters
-curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page=1&limit=10"</div>
+curl -X GET "http://localhost:3000/api/web/trails?difficulty=hard&isActive=true&page=1&limit=10"</div>
                         </div>
                         <div class="detail-section">
                             <div class="detail-title">Expected Response Codes</div>
@@ -1439,6 +1440,236 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
 ❌ 400 Bad Request - Invalid data, missing required fields
 ❌ 404 Not Found - Trail not found (GET, PUT, DELETE by ID)
 ❌ 500 Server Error - Database or server issues</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trail Info APIs Section (Public) -->
+            <div class="section" id="trail-info-apis">
+                <h2 class="section-title">📋 Trail Info APIs (Public)</h2>
+                <div class="description" style="margin-bottom: 30px; padding: 15px; background: #e8f4f8; border-radius: 8px;">
+                    <strong>Note:</strong> These endpoints are publicly accessible and do not require authentication. They provide read-only access to trail information including featured trails, trail details, and filtering options.
+                </div>
+
+                <!-- Get Featured Trails -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/web/trail-info/featured</span>
+                    </div>
+                    <div class="description">
+                        Get a list of featured trails with simplified details. Returns trails with essential information formatted for display.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 2,
+  "trails": [
+    {
+      "id": "60d5ec49f1b2c72b8c8e4f1a",
+      "name": "Everest Base Camp Trek",
+      "region": "Khumbu",
+      "country": "Nepal",
+      "difficulty": "hard",
+      "duration_days": 14,
+      "activityType": "Trekking",
+      "image": "https://res.cloudinary.com/..."
+    },
+    {
+      "id": "60d5ec49f1b2c72b8c8e4f1b",
+      "name": "Annapurna Circuit",
+      "region": "Annapurna",
+      "country": "Nepal",
+      "difficulty": "moderate",
+      "duration_days": 12,
+      "activityType": "Trekking",
+      "image": "https://res.cloudinary.com/..."
+    }
+  ]
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/web/trail-info/featured</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get Trail Info by ID -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/web/trail-info/:id</span>
+                    </div>
+                    <div class="description">
+                        Get detailed trail information by its ID. Returns complete trail information including location, difficulty, duration, altitude, environment, and user content.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">URL Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>id</td>
+                                        <td>String</td>
+                                        <td><span class="required">Yes</span></td>
+                                        <td>Trail info ID (MongoDB ObjectId)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">400 Bad Request</span>
+                                <span class="response-code error">404 Not Found</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "trailInfo": {
+    "_id": "60d5ec49f1b2c72b8c8e4f1a",
+    "name": "Everest Base Camp Trek",
+    "region": "Khumbu",
+    "country": "Nepal",
+    "description": "A classic trek to the base of the world's highest mountain...",
+    "difficulty": "hard",
+    "duration_days": 14,
+    "total_distance_km": 130,
+    "best_season": ["March", "April", "May", "October", "November"],
+    "major_highlights": [
+      "Everest Base Camp (5364m)",
+      "Kala Patthar (5643m)",
+      "Namche Bazaar"
+    ],
+    "starting_point": {
+      "name": "Lukla",
+      "altitude_m": 2840
+    },
+    "ending_point": {
+      "name": "Everest Base Camp",
+      "altitude_m": 5364
+    },
+    "altitude_min_m": 2840,
+    "altitude_max_m": 5643,
+    "isFeatured": true,
+    "image": "https://res.cloudinary.com/...",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Command</div>
+                            <div class="code-block">curl -X GET http://localhost:3000/api/web/trail-info/60d5ec49f1b2c72b8c8e4f1a</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Error Response Examples</div>
+                            <div class="code-block json">// 404 Not Found
+{
+  "success": false,
+  "message": "Trail info not found"
+}
+
+// 400 Bad Request - Invalid ID
+{
+  "success": false,
+  "message": "Invalid trail info ID"
+}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Get All Trail Info -->
+                <div class="api-card">
+                    <div class="api-header">
+                        <span class="method get">GET</span>
+                        <span class="endpoint">/api/web/trail-info</span>
+                    </div>
+                    <div class="description">
+                        Get all trail information records. Returns a list of all trail info sorted by creation date (newest first). Supports filtering by featured status.
+                    </div>
+                    <div class="details">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="param-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Required</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>isFeatured</td>
+                                        <td>Boolean (string)</td>
+                                        <td><span class="optional">Optional</span></td>
+                                        <td>Filter by featured status. Use <code>?isFeatured=true</code> or <code>?isFeatured=false</code></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response</div>
+                            <div>
+                                <span class="response-code success">200 OK</span>
+                                <span class="response-code error">500 Server Error</span>
+                            </div>
+                            <div class="code-block json">{
+  "success": true,
+  "count": 2,
+  "trailInfo": [
+    {
+      "_id": "60d5ec49f1b2c72b8c8e4f1a",
+      "name": "Everest Base Camp Trek",
+      "region": "Khumbu",
+      "country": "Nepal",
+      "difficulty": "hard",
+      "duration_days": 14,
+      "isFeatured": true,
+      ...
+    },
+    {
+      "_id": "60d5ec49f1b2c72b8c8e4f1b",
+      "name": "Annapurna Circuit",
+      "region": "Annapurna",
+      "country": "Nepal",
+      "difficulty": "moderate",
+      "duration_days": 12,
+      "isFeatured": false,
+      ...
+    }
+  ]
+}</div>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">cURL Test Commands</div>
+                            <div class="code-block">// Get all trail info
+curl -X GET http://localhost:3000/api/web/trail-info
+
+// Get only featured trails
+curl -X GET "http://localhost:3000/api/web/trail-info?isFeatured=true"
+
+// Get only non-featured trails
+curl -X GET "http://localhost:3000/api/web/trail-info?isFeatured=false"</div>
                         </div>
                     </div>
                 </div>
@@ -2423,180 +2654,12 @@ curl -X GET "http://localhost:3000/api/trails?difficulty=hard&isActive=true&page
                     </div>
                 </div>
 
-                <!-- Get Featured Trails -->
-                <div class="api-card">
-                    <div class="api-header">
-                        <span class="method get">GET</span>
-                        <span class="endpoint">/api/admin/trail-info/featured</span>
-                    </div>
+                <!-- Note about GET endpoints -->
+                <div class="api-card" style="background: #fff3cd; border-left-color: #ffc107;">
                     <div class="description">
-                        Get a list of featured trails with simplified details.
-                    </div>
-                    <div class="details">
-                        <div class="detail-section">
-                            <div class="detail-title">Response</div>
-                            <div class="code-block json">{
-  "success": true,
-  "count": 2,
-  "trails": [
-    {
-      "id": "60d5ec...",
-      "name": "Annapurna Circuit",
-      "region": "Annapurna",
-      "country": "Nepal",
-      "difficulty": "Hard",
-      "duration_days": 14,
-      "activityType": "Trekking",
-      "image": "https://..."
-    }
-  ]
-}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Get All Trail Info -->
-                <div class="api-card">
-                    <div class="api-header">
-                        <span class="method get">GET</span>
-                        <span class="endpoint">/api/admin/trail-info</span>
-                    </div>
-                    <div class="description">
-                        Get all trail information records. Returns a list of all trail info sorted by creation date (newest first). Supports filtering by featured status.
-                    </div>
-                    <div class="details">
-                        <div class="detail-section">
-                            <div class="detail-title">Query Parameters</div>
-                            <table class="param-table">
-                                <thead>
-                                    <tr>
-                                        <th>Parameter</th>
-                                        <th>Type</th>
-                                        <th>Required</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>isFeatured</td>
-                                        <td>Boolean (string)</td>
-                                        <td><span class="optional">Optional</span></td>
-                                        <td>Filter by featured status. Use <code>?isFeatured=true</code> or <code>?isFeatured=false</code></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Response</div>
-                            <div>
-                                <span class="response-code success">200 OK</span>
-                                <span class="response-code error">401 Unauthorized</span>
-                                <span class="response-code error">403 Forbidden</span>
-                                <span class="response-code error">500 Server Error</span>
-                            </div>
-                            <div class="code-block json">{
-  "success": true,
-  "count": 2,
-  "trailInfo": [
-    {
-      "_id": "507f1f77bcf86cd799439014",
-      "name": "Everest Base Camp Trek",
-      "region": "Khumbu",
-      "country": "Nepal",
-      ...
-    },
-    {
-      "_id": "507f1f77bcf86cd799439015",
-      "name": "Annapurna Circuit",
-      "region": "Annapurna",
-      "country": "Nepal",
-      ...
-    }
-  ]
-}</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">cURL Test Command</div>
-                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/trail-info \
-  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Get Trail Info by ID -->
-                <div class="api-card">
-                    <div class="api-header">
-                        <span class="method get">GET</span>
-                        <span class="endpoint">/api/admin/trail-info/:id</span>
-                    </div>
-                    <div class="description">
-                        Get a specific trail information record by its ID.
-                    </div>
-                    <div class="details">
-                        <div class="detail-section">
-                            <div class="detail-title">URL Parameters</div>
-                            <table class="param-table">
-                                <thead>
-                                    <tr>
-                                        <th>Parameter</th>
-                                        <th>Type</th>
-                                        <th>Required</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>id</td>
-                                        <td>String</td>
-                                        <td><span class="required">Yes</span></td>
-                                        <td>Trail info ID (MongoDB ObjectId)</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Response</div>
-                            <div>
-                                <span class="response-code success">200 OK</span>
-                                <span class="response-code error">400 Bad Request</span>
-                                <span class="response-code error">404 Not Found</span>
-                                <span class="response-code error">401 Unauthorized</span>
-                                <span class="response-code error">403 Forbidden</span>
-                            </div>
-                            <div class="code-block json">{
-  "success": true,
-  "trailInfo": {
-    "_id": "507f1f77bcf86cd799439014",
-    "name": "Everest Base Camp Trek",
-    "region": "Khumbu",
-    "country": "Nepal",
-    "description": "A classic trek to the base of the world's highest mountain...",
-    "difficulty": "hard",
-    "duration_days": 14,
-    "total_distance_km": 130,
-    ...
-  }
-}</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">cURL Test Command</div>
-                            <div class="code-block">curl -X GET http://localhost:3000/api/admin/trail-info/507f1f77bcf86cd799439014 \
-  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN"</div>
-                        </div>
-                        <div class="detail-section">
-                            <div class="detail-title">Error Response Examples</div>
-                            <div class="code-block json">// 404 Not Found
-{
-  "success": false,
-  "message": "Trail info not found"
-}
-
-// 400 Bad Request - Invalid ID
-{
-  "success": false,
-  "message": "Invalid trail info ID"
-}</div>
-                        </div>
+                        <strong>Note:</strong> GET endpoints for trail info (featured, all, by ID) are publicly accessible and do not require authentication. 
+                        They are documented in the <a href="#trail-info-apis" style="color: #667eea; text-decoration: underline;">Trail Info APIs (Public)</a> section above.
+                        This admin section focuses on write operations (Create, Update, Delete) that require admin authentication.
                     </div>
                 </div>
 

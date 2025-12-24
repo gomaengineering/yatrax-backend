@@ -14,6 +14,8 @@ const router = express.Router();
 router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
 router.get("/:id", getTrailInfoById);
 router.get("/", getAllTrailInfo);
+
+
 // Admin-only Trail Info Management Routes (Create, Update, Delete)
 // Use optionalUpload to allow both file upload (field: 'image') or imageUrl in body
 // Use 'trail-info' folder for Cloudinary uploads

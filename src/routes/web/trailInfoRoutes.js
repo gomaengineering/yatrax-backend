@@ -13,5 +13,7 @@ router.get("/featured", getFeaturedTrails); // Specific route before parameteriz
 router.get("/:id", getTrailInfoById);
 router.get("/", getAllTrailInfo);
 
+// rest of the routes in this file are for admin which will be used to create, update, delete trail infos.
+
 export default router;
 
