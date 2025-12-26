@@ -33,6 +33,12 @@ tags:
     description: User authentication and token management
   - name: User Profile
     description: User profile management
+  - name: Guides
+    description: Guide browsing and details (read-only)
+  - name: Trails
+    description: Trail browsing, details, and geospatial queries (read-only)
+  - name: Trail Info
+    description: Trail information and metadata (read-only)
 
 paths:
   /auth/login:
@@ -558,6 +564,530 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /guides:
+    get:
+      tags:
+        - Guides
+      summary: Get all guides
+      description: |
+        Browse and search guides with pagination, filtering, and sorting.
+        Returns minimal fields optimized for mobile list views.
+      operationId: getAllGuides
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Number of results per page (max 50)
+        - name: trekAreas
+          in: query
+          schema:
+            type: string
+          description: Filter by trekking areas (comma-separated)
+          example: "Everest,Annapurna"
+        - name: minExperience
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum years of experience
+        - name: maxRatePerDay
+          in: query
+          schema:
+            type: number
+            minimum: 0
+          description: Maximum rate per day
+        - name: languages
+          in: query
+          schema:
+            type: string
+          description: Filter by languages (comma-separated)
+          example: "English,Nepali"
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in name, description, education
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, experience, ratePerDay, name]
+            default: createdAt
+          description: Sort order
+      responses:
+        '200':
+          description: Guides retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      guides:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GuideListItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+              example:
+                success: true
+                data:
+                  guides:
+                    - id: "507f1f77bcf86cd799439021"
+                      name: "Sherpa Tenzing"
+                      description: "Experienced mountain guide with 10+ years..."
+                      trekAreas: ["Everest Base Camp", "Annapurna Circuit"]
+                      experience: 10
+                      languages: ["English", "Nepali", "Tibetan"]
+                      ratePerDay: 5000
+                      certifications: ["IFMGA Certified", "Wilderness First Aid"]
+                      education: "Mountain Guide Certification"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 45
+                    pages: 3
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides/{id}:
+    get:
+      tags:
+        - Guides
+      summary: Get guide by ID
+      description: Get detailed guide information with all professional details.
+      operationId: getGuideById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Guide retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439021"
+                  firstName: "Sherpa"
+                  lastName: "Tenzing"
+                  name: "Sherpa Tenzing"
+                  description: "Experienced mountain guide with 10+ years of experience in the Himalayas..."
+                  trekAreas: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+                  experience: 10
+                  education: "Mountain Guide Certification, Advanced Wilderness First Aid"
+                  languages: ["English", "Nepali", "Tibetan", "Hindi"]
+                  ratePerDay: 5000
+                  certifications:
+                    - "IFMGA Certified"
+                    - "Wilderness First Aid"
+                    - "High Altitude Rescue"
+        '400':
+          description: Invalid guide ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails:
+    get:
+      tags:
+        - Trails
+      summary: Get all trails
+      description: |
+        Browse and search trails with pagination, filtering, sorting, and optional geospatial queries.
+        Returns minimal fields with simplified geometry optimized for mobile list views.
+      operationId: getAllTrails
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Number of results per page (max 50)
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Search trail name (case-insensitive)
+        - name: difficulty
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Filter by difficulty (numeric)
+        - name: activityType
+          in: query
+          schema:
+            type: string
+            enum: [Hike, Trekking, City Tour]
+          description: Filter by activity type (from TrailInfo)
+        - name: region
+          in: query
+          schema:
+            type: string
+          description: Filter by region (from TrailInfo)
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by country (from TrailInfo)
+        - name: hasTrailInfo
+          in: query
+          schema:
+            type: string
+            enum: [true, false]
+          description: Filter trails with/without TrailInfo
+        - name: minRating
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+          description: Minimum rating (0-5)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, name, difficulty, rating]
+            default: createdAt
+          description: Sort order
+        - name: longitude
+          in: query
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          description: Longitude for geospatial filter
+        - name: latitude
+          in: query
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          description: Latitude for geospatial filter
+        - name: radius
+          in: query
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 100
+          description: Radius in kilometers for geospatial filter (max 100km)
+      responses:
+        '200':
+          description: Trails retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      trails:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TrailListItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+              example:
+                success: true
+                data:
+                  trails:
+                    - id: "507f1f77bcf86cd799439021"
+                      name: "Everest Base Camp Trek"
+                      difficulty: 4
+                      activityType: "Trekking"
+                      region: "Khumbu"
+                      country: "Nepal"
+                      duration_days: 14
+                      total_distance_km: 130
+                      rating_avg: 4.8
+                      rating_count: 245
+                      image: "https://cloudinary.com/..."
+                      geometry:
+                        type: "LineString"
+                        coordinates: [[86.85, 27.99], [86.87, 28.01]]
+                      hasTrailInfo: true
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 45
+                    pages: 3
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails/{id}:
+    get:
+      tags:
+        - Trails
+      summary: Get trail by ID
+      description: Get detailed trail information with full geometry and complete TrailInfo.
+      operationId: getTrailById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Trail ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Trail retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TrailDetail'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439021"
+                  type: "Feature"
+                  geometry:
+                    type: "LineString"
+                    coordinates: [[86.85, 27.99], [86.87, 28.01], [86.89, 28.03]]
+                  properties:
+                    fid: 123
+                    id: 456
+                    name: "Everest Base Camp Trek"
+                    difficulty: 4
+                  trailInfo:
+                    id: "507f1f77bcf86cd799439022"
+                    name: "Everest Base Camp Trek"
+                    region: "Khumbu"
+                    country: "Nepal"
+                    description: "Full description..."
+                    difficulty: "Challenging"
+                    activityType: "Trekking"
+                    duration_days: 14
+                    total_distance_km: 130
+                    best_season: ["March", "April", "May"]
+                    major_highlights: ["Everest Base Camp", "Kala Patthar"]
+                    starting_point:
+                      name: "Lukla"
+                      altitude_m: 2840
+                    ending_point:
+                      name: "Everest Base Camp"
+                      altitude_m: 5364
+                    altitude_min_m: 2840
+                    altitude_max_m: 5364
+                    permit_required: ["Sagarmatha National Park Permit"]
+                    environment:
+                      wildlife: ["Snow Leopard"]
+                      local_culture: "Sherpa culture..."
+                      climate_conditions: "Alpine climate..."
+                      conservation_rules: "Leave no trace..."
+                    user_content:
+                      rating_avg: 4.8
+                      rating_count: 245
+                    image: "https://cloudinary.com/..."
+        '400':
+          description: Invalid trail ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails/{trailId}/info:
+    get:
+      tags:
+        - Trail Info
+      summary: Get TrailInfo for a trail
+      description: |
+        Get TrailInfo (detailed metadata) for a specific trail.
+        TrailInfo must be linked to the specified trail.
+      operationId: getTrailInfoByTrailId
+      security: []
+      parameters:
+        - name: trailId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Trail ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: TrailInfo retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TrailInfo'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439022"
+                  name: "Everest Base Camp Trek"
+                  region: "Khumbu"
+                  country: "Nepal"
+                  description: "A challenging trek to the base of the world's highest mountain..."
+                  difficulty: "Challenging"
+                  activityType: "Trekking"
+                  duration_days: 14
+                  total_distance_km: 130
+                  best_season: ["March", "April", "May", "October", "November"]
+                  major_highlights:
+                    - "Everest Base Camp"
+                    - "Kala Patthar"
+                    - "Namche Bazaar"
+                  starting_point:
+                    name: "Lukla"
+                    altitude_m: 2840
+                  ending_point:
+                    name: "Everest Base Camp"
+                    altitude_m: 5364
+                  altitude_min_m: 2840
+                  altitude_max_m: 5364
+                  permit_required:
+                    - "Sagarmatha National Park Permit"
+                    - "TIMS Card"
+                  environment:
+                    wildlife: ["Snow Leopard", "Himalayan Tahr"]
+                    local_culture: "Rich Sherpa culture..."
+                    climate_conditions: "Alpine climate..."
+                    conservation_rules: "Leave no trace principles..."
+                  user_content:
+                    rating_avg: 4.8
+                    rating_count: 245
+                  image: "https://cloudinary.com/..."
+        '400':
+          description: Invalid trail ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail or TrailInfo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                trailNotFound:
+                  summary: Trail not found
+                  value:
+                    success: false
+                    message: "Trail not found"
+                    error:
+                      code: "RESOURCE_NOT_FOUND"
+                      type: "resource_error"
+                trailInfoNotFound:
+                  summary: TrailInfo not found for trail
+                  value:
+                    success: false
+                    message: "Trail information not found for this trail"
+                    error:
+                      code: "RESOURCE_NOT_FOUND"
+                      type: "resource_error"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -749,4 +1279,312 @@ components:
           type: string
           example: "16.0"
           description: Operating system version
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          example: 20
+          description: Results per page
+        total:
+          type: integer
+          example: 45
+          description: Total number of results
+        pages:
+          type: integer
+          example: 3
+          description: Total number of pages
+
+    GuideListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        name:
+          type: string
+          example: "Sherpa Tenzing"
+          description: Full name (firstName + lastName)
+        description:
+          type: string
+          example: "Experienced mountain guide with 10+ years..."
+          description: Truncated description (200 chars max)
+        trekAreas:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Annapurna Circuit"]
+        experience:
+          type: integer
+          example: 10
+          description: Years of experience
+        languages:
+          type: array
+          items:
+            type: string
+          example: ["English", "Nepali", "Tibetan"]
+        ratePerDay:
+          type: number
+          example: 5000
+          description: Rate per day
+        certifications:
+          type: array
+          items:
+            type: string
+          example: ["IFMGA Certified", "Wilderness First Aid"]
+          description: First 3 certifications only
+        education:
+          type: string
+          example: "Mountain Guide Certification"
+
+    GuideDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        firstName:
+          type: string
+          example: "Sherpa"
+        lastName:
+          type: string
+          example: "Tenzing"
+        name:
+          type: string
+          example: "Sherpa Tenzing"
+        description:
+          type: string
+          example: "Experienced mountain guide with 10+ years of experience..."
+          description: Full description
+        trekAreas:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+        experience:
+          type: integer
+          example: 10
+        education:
+          type: string
+          example: "Mountain Guide Certification, Advanced Wilderness First Aid"
+        languages:
+          type: array
+          items:
+            type: string
+          example: ["English", "Nepali", "Tibetan", "Hindi"]
+        ratePerDay:
+          type: number
+          example: 5000
+        certifications:
+          type: array
+          items:
+            type: string
+          example: ["IFMGA Certified", "Wilderness First Aid", "High Altitude Rescue"]
+          description: All certifications
+
+    TrailListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        name:
+          type: string
+          example: "Everest Base Camp Trek"
+        difficulty:
+          type: integer
+          nullable: true
+          example: 4
+        activityType:
+          type: string
+          nullable: true
+          enum: [Hike, Trekking, City Tour]
+          example: "Trekking"
+        region:
+          type: string
+          nullable: true
+          example: "Khumbu"
+        country:
+          type: string
+          nullable: true
+          example: "Nepal"
+        duration_days:
+          type: integer
+          nullable: true
+          example: 14
+        total_distance_km:
+          type: number
+          nullable: true
+          example: 130
+        rating_avg:
+          type: number
+          nullable: true
+          example: 4.8
+        rating_count:
+          type: integer
+          nullable: true
+          example: 245
+        image:
+          type: string
+          nullable: true
+          example: "https://cloudinary.com/..."
+        geometry:
+          type: object
+          nullable: true
+          description: Simplified geometry (first/last point or bounding box)
+          properties:
+            type:
+              type: string
+              enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+            coordinates:
+              type: array
+        hasTrailInfo:
+          type: boolean
+          example: true
+
+    TrailDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        type:
+          type: string
+          example: "Feature"
+        geometry:
+          type: object
+          description: Full geometry with complete coordinates
+          properties:
+            type:
+              type: string
+              enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+            coordinates:
+              type: array
+        properties:
+          type: object
+          description: All trail properties
+          additionalProperties: true
+        trailInfo:
+          $ref: '#/components/schemas/TrailInfo'
+          nullable: true
+
+    TrailInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439022"
+        name:
+          type: string
+          example: "Everest Base Camp Trek"
+        region:
+          type: string
+          example: "Khumbu"
+        country:
+          type: string
+          example: "Nepal"
+        description:
+          type: string
+          example: "A challenging trek to the base of the world's highest mountain..."
+        difficulty:
+          type: string
+          example: "Challenging"
+        activityType:
+          type: string
+          nullable: true
+          enum: [Hike, Trekking, City Tour]
+          example: "Trekking"
+        duration_days:
+          type: integer
+          example: 14
+        total_distance_km:
+          type: number
+          example: 130
+        best_season:
+          type: array
+          items:
+            type: string
+          example: ["March", "April", "May", "October", "November"]
+        major_highlights:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Kala Patthar", "Namche Bazaar"]
+        starting_point:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              example: "Lukla"
+            altitude_m:
+              type: number
+              example: 2840
+        ending_point:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              example: "Everest Base Camp"
+            altitude_m:
+              type: number
+              example: 5364
+        altitude_min_m:
+          type: number
+          example: 2840
+        altitude_max_m:
+          type: number
+          example: 5364
+        permit_required:
+          type: array
+          items:
+            type: string
+          example: ["Sagarmatha National Park Permit", "TIMS Card"]
+        environment:
+          type: object
+          nullable: true
+          properties:
+            wildlife:
+              type: array
+              items:
+                type: string
+              example: ["Snow Leopard", "Himalayan Tahr"]
+            local_culture:
+              type: string
+              nullable: true
+              example: "Rich Sherpa culture..."
+            climate_conditions:
+              type: string
+              nullable: true
+              example: "Alpine climate..."
+            conservation_rules:
+              type: string
+              nullable: true
+              example: "Leave no trace principles..."
+        user_content:
+          type: object
+          properties:
+            rating_avg:
+              type: number
+              minimum: 0
+              maximum: 5
+              example: 4.8
+            rating_count:
+              type: integer
+              minimum: 0
+              example: 245
+        image:
+          type: string
+          example: "https://cloudinary.com/..."
 
