@@ -21,6 +21,9 @@ import adminTrailInfoRoutes from './routes/admin/trailInfoRoutes.js';
 // App Routes
 import appAuthRoutes from './routes/app/auth.routes.js';
 import appUserRoutes from './routes/app/user.routes.js';
+import appGuideRoutes from './routes/app/guide.routes.js';
+import appTrailRoutes from './routes/app/trail.routes.js';
+import appTrailInfoRoutes from './routes/app/trailInfo.routes.js';
 import { appRateLimiter } from './middleware/appRateLimiter.js';
 import { appErrorHandler } from './middleware/appErrorHandler.js';
 
@@ -76,6 +79,10 @@ app.use("/api/admin/stats", adminStatsRoutes);
 app.use("/api/v1/app", appRateLimiter);
 app.use("/api/v1/app/auth", appAuthRoutes);
 app.use("/api/v1/app", appUserRoutes);
+app.use("/api/v1/app/guides", appGuideRoutes);
+// Mount trailInfo routes before trail routes to avoid route conflicts (more specific route first)
+app.use("/api/v1/app/trails", appTrailInfoRoutes);
+app.use("/api/v1/app/trails", appTrailRoutes);
 
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
