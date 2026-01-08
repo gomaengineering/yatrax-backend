@@ -1,13 +1,17 @@
 import cron from "cron";
 import https from "https";
 
-const job = new cron.CronJob("*/14 * * * *", function () {
-  https
-    .get("https://yatrax-backend.onrender.com/", (res) => {
-      if (res.statusCode === 200) console.log("GET request sent successfully");
-      else console.log("GET request failed", res.statusCode);
-    })
-    .on("error", (e) => console.error("Error while sending request", e));
+const job = cron.CronJob.from({
+  cronTime: "*/14 * * * *",
+  onTick: function () {
+    https
+      .get("https://yatrax-backend.onrender.com/", (res) => {
+        if (res.statusCode === 200) console.log("GET request sent successfully");
+        else console.log("GET request failed", res.statusCode);
+      })
+      .on("error", (e) => console.error("Error while sending request", e));
+  },
+  start: false
 });
 
 export default job;
