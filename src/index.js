@@ -1,4 +1,5 @@
 import express from 'express';
+import cronJob from './utils/corn.js';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -33,6 +34,8 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 connectDB();
+
+cronJob.start();
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
