@@ -1,0 +1,1613 @@
+openapi: 3.0.3
+info:
+  title: YatraX Admin API
+  description: |
+    RESTful API for YatraX admin panel.
+    
+    ## Authentication
+    All admin endpoints require JWT token authentication with admin role.
+    - Tokens expire in 7 days (default)
+    - Include token in Authorization header: `Bearer <token>`
+    - Admin accounts can exist in both User and Guide models
+    
+    ## Authorization
+    All endpoints require admin role. Use `/api/admin/auth/login` to authenticate.
+  version: 1.0.0
+  contact:
+    name: YatraX API Support
+    email: support@yatrax.com
+
+servers:
+  - url: http://localhost:8000/api/admin
+    description: Development server
+  - url: https://api.yatrax.com/api/admin
+    description: Production server
+
+tags:
+  - name: Admin Authentication
+    description: Admin login and profile management
+  - name: User Management
+    description: CRUD operations for users
+  - name: Guide Management
+    description: CRUD operations for guides
+  - name: Trail Management
+    description: CRUD operations for trails
+  - name: Trail Info Management
+    description: CRUD operations for trail information
+  - name: Statistics
+    description: Dashboard statistics and analytics
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Admin Authentication
+      summary: Admin login
+      description: Login as admin. Supports admin accounts from both User and Guide models.
+      operationId: loginAdmin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+                userType:
+                  type: string
+                  enum: [user, guide]
+                  description: Optional - specify "user" or "guide" (default: tries both)
+      responses:
+        '200':
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminAuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials or not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/profile:
+    get:
+      tags:
+        - Admin Authentication
+      summary: Get admin profile
+      description: Get the authenticated admin's profile information
+      operationId: getAdminProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  admin:
+                    oneOf:
+                      - $ref: '#/components/schemas/User'
+                      - $ref: '#/components/schemas/Guide'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users:
+    get:
+      tags:
+        - User Management
+      summary: Get all users
+      description: Get all users sorted by creation date (newest first). No pagination.
+      operationId: getAllUsers
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - User Management
+      summary: Create user
+      description: Create a new user account (admin only)
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                country:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, porter, admin]
+                  default: user
+                subscription:
+                  type: string
+                  enum: [free, premium]
+                  default: free
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      tags:
+        - User Management
+      summary: Get user by ID
+      description: Get a specific user by ID
+      operationId: getUserById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Management
+      summary: Update user
+      description: Update an existing user. All fields are optional.
+      operationId: updateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                country:
+                  type: string
+                role:
+                  type: string
+                  enum: [user, porter, admin]
+                subscription:
+                  type: string
+                  enum: [free, premium]
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - User Management
+      summary: Delete user
+      description: Delete a user by ID. Cannot delete your own admin account.
+      operationId: deleteUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Cannot delete own account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides:
+    get:
+      tags:
+        - Guide Management
+      summary: Get all guides
+      description: Get all guides without pagination or filtering
+      operationId: getAllGuides
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Guides retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  guides:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Guide'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Guide Management
+      summary: Create guide
+      description: Create a new guide account (admin only)
+      operationId: createGuide
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - description
+                - TBNumber
+                - trekAreas
+                - experience
+                - education
+                - languages
+                - ratePerDay
+                - certifications
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                description:
+                  type: string
+                TBNumber:
+                  type: string
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                experience:
+                  type: integer
+                  minimum: 0
+                education:
+                  type: string
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                role:
+                  type: string
+                  enum: [guide, admin]
+                  default: guide
+      responses:
+        '201':
+          description: Guide created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  guide:
+                    $ref: '#/components/schemas/Guide'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Guide already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides/{id}:
+    get:
+      tags:
+        - Guide Management
+      summary: Get guide by ID
+      description: Get a specific guide by ID
+      operationId: getGuideById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Guide retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  guide:
+                    $ref: '#/components/schemas/Guide'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Guide Management
+      summary: Update guide
+      description: Update an existing guide. All fields are optional.
+      operationId: updateGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                description:
+                  type: string
+                TBNumber:
+                  type: string
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                experience:
+                  type: integer
+                education:
+                  type: string
+                languages:
+                  type: array
+                  items:
+                    type: string
+                ratePerDay:
+                  type: number
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                role:
+                  type: string
+                  enum: [guide, admin]
+      responses:
+        '200':
+          description: Guide updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  guide:
+                    $ref: '#/components/schemas/Guide'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Guide Management
+      summary: Delete guide
+      description: Delete a guide by ID. Cannot delete your own admin account.
+      operationId: deleteGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Guide deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Cannot delete own account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails:
+    get:
+      tags:
+        - Trail Management
+      summary: Get all trails
+      description: Get all trails with admin-specific filters and pagination
+      operationId: getAllTrails
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 100
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: guideId
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, name, difficulty]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Trails retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  trails:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GeoJSONFeature'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Trail Management
+      summary: Create trail
+      description: Create a new trail with GeoJSON data (admin only)
+      operationId: createTrail
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoJSONFeature'
+      responses:
+        '201':
+          description: Trail created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  trail:
+                    $ref: '#/components/schemas/GeoJSONFeature'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails/{id}:
+    get:
+      tags:
+        - Trail Management
+      summary: Get trail by ID
+      description: Get a specific trail by ID
+      operationId: getTrailById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Trail retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  trail:
+                    $ref: '#/components/schemas/GeoJSONFeature'
+        '404':
+          description: Trail not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Trail Management
+      summary: Update trail
+      description: Update an existing trail. All fields are optional.
+      operationId: updateTrail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeoJSONFeature'
+      responses:
+        '200':
+          description: Trail updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  trail:
+                    $ref: '#/components/schemas/GeoJSONFeature'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Trail Management
+      summary: Delete trail
+      description: Delete a trail by ID
+      operationId: deleteTrail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Trail deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Trail not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trail-info:
+    post:
+      tags:
+        - Trail Info Management
+      summary: Create trail info
+      description: |
+        Create detailed trail information. Supports automatic Trail (GeoJSON) creation if geometry is provided.
+        If geometry is provided, a Trail will be automatically created first, and its ID will be used as the trailId foreign key.
+      operationId: createTrailInfo
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - region
+                - country
+                - description
+                - difficulty
+                - duration_days
+                - total_distance_km
+                - best_season
+                - major_highlights
+                - starting_point
+                - ending_point
+                - altitude_min_m
+                - altitude_max_m
+              properties:
+                name:
+                  type: string
+                region:
+                  type: string
+                country:
+                  type: string
+                description:
+                  type: string
+                difficulty:
+                  type: string
+                duration_days:
+                  type: integer
+                  minimum: 1
+                total_distance_km:
+                  type: number
+                best_season:
+                  type: array
+                  items:
+                    type: string
+                major_highlights:
+                  type: array
+                  items:
+                    type: string
+                starting_point:
+                  type: string
+                  description: JSON string with name and altitude_m
+                ending_point:
+                  type: string
+                  description: JSON string with name and altitude_m
+                altitude_min_m:
+                  type: number
+                altitude_max_m:
+                  type: number
+                permit_required:
+                  type: array
+                  items:
+                    type: string
+                environment:
+                  type: string
+                  description: JSON string
+                user_content:
+                  type: string
+                  description: JSON string
+                image:
+                  type: string
+                  format: binary
+                imageUrl:
+                  type: string
+                  description: Alternative to image file upload
+                geometry:
+                  type: string
+                  description: JSON string of GeoJSON geometry
+                trailProperties:
+                  type: string
+                  description: JSON string of trail properties
+                trailId:
+                  type: string
+                  description: ID of existing Trail (optional if geometry provided)
+                activityType:
+                  type: string
+                  enum: [Hike, Trekking, City Tour]
+                isFeatured:
+                  type: boolean
+      responses:
+        '201':
+          description: Trail info created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  trailInfo:
+                    $ref: '#/components/schemas/TrailInfo'
+                  trail:
+                    $ref: '#/components/schemas/GeoJSONFeature'
+                    nullable: true
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trail-info/{id}:
+    put:
+      tags:
+        - Trail Info Management
+      summary: Update trail info
+      description: Update an existing trail information record. All fields are optional - partial update supported.
+      operationId: updateTrailInfo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                region:
+                  type: string
+                country:
+                  type: string
+                description:
+                  type: string
+                difficulty:
+                  type: string
+                duration_days:
+                  type: integer
+                total_distance_km:
+                  type: number
+                best_season:
+                  type: array
+                  items:
+                    type: string
+                major_highlights:
+                  type: array
+                  items:
+                    type: string
+                starting_point:
+                  type: string
+                ending_point:
+                  type: string
+                altitude_min_m:
+                  type: number
+                altitude_max_m:
+                  type: number
+                permit_required:
+                  type: array
+                  items:
+                    type: string
+                environment:
+                  type: string
+                user_content:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+                imageUrl:
+                  type: string
+                trailId:
+                  type: string
+                activityType:
+                  type: string
+                isFeatured:
+                  type: boolean
+      responses:
+        '200':
+          description: Trail info updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  trailInfo:
+                    $ref: '#/components/schemas/TrailInfo'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail info not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Trail Info Management
+      summary: Delete trail info
+      description: Delete a trail information record by ID
+      operationId: deleteTrailInfo
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+      responses:
+        '200':
+          description: Trail info deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Trail info not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /stats/dashboard:
+    get:
+      tags:
+        - Statistics
+      summary: Get dashboard statistics
+      description: Get comprehensive dashboard statistics including user counts, guide counts, trail counts, recent activity, and breakdowns
+      operationId: getDashboardStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  stats:
+                    type: object
+                    properties:
+                      overview:
+                        type: object
+                        properties:
+                          totalUsers:
+                            type: integer
+                          totalGuides:
+                            type: integer
+                          totalTrails:
+                            type: integer
+                          activeUsers:
+                            type: integer
+                          activeGuides:
+                            type: integer
+                          activeTrails:
+                            type: integer
+                      recentActivity:
+                        type: object
+                        properties:
+                          recentUsers:
+                            type: integer
+                          recentGuides:
+                            type: integer
+                          recentTrails:
+                            type: integer
+                          period:
+                            type: string
+                      breakdowns:
+                        type: object
+                        properties:
+                          usersByRole:
+                            type: object
+                          usersBySubscription:
+                            type: object
+                          trailsByDifficulty:
+                            type: object
+                          guidesByExperience:
+                            type: object
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from admin login endpoint
+
+  schemas:
+    AdminAuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Admin login successful"
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        admin:
+          oneOf:
+            - $ref: '#/components/schemas/User'
+            - $ref: '#/components/schemas/Guide'
+        type:
+          type: string
+          enum: [user, guide]
+          example: "user"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439011"
+        firstName:
+          type: string
+          example: "John"
+        lastName:
+          type: string
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        country:
+          type: string
+          nullable: true
+          example: "Nepal"
+        role:
+          type: string
+          enum: [user, porter, admin]
+          example: "user"
+        subscription:
+          type: string
+          enum: [free, premium]
+          example: "free"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Guide:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        firstName:
+          type: string
+          example: "Sherpa"
+        lastName:
+          type: string
+          example: "Tenzing"
+        email:
+          type: string
+          format: email
+          example: "tenzing@example.com"
+        role:
+          type: string
+          enum: [guide, admin]
+          example: "guide"
+        description:
+          type: string
+          example: "Experienced mountain guide with 10+ years"
+        TBNumber:
+          type: string
+          example: "TB-12345"
+        trekAreas:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Annapurna Circuit"]
+        experience:
+          type: integer
+          example: 10
+        education:
+          type: string
+          example: "Mountain Guide Certification"
+        languages:
+          type: array
+          items:
+            type: string
+          example: ["English", "Nepali", "Tibetan"]
+        ratePerDay:
+          type: number
+          example: 5000
+        certifications:
+          type: array
+          items:
+            type: string
+          example: ["IFMGA Certified", "Wilderness First Aid"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GeoJSONFeature:
+      type: object
+      required:
+        - type
+        - geometry
+      properties:
+        type:
+          type: string
+          enum: [Feature]
+          default: Feature
+        geometry:
+          $ref: '#/components/schemas/GeoJSONGeometry'
+        properties:
+          type: object
+          additionalProperties: true
+
+    GeoJSONGeometry:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+        coordinates:
+          oneOf:
+            - type: array
+              items:
+                type: number
+            - type: array
+              items:
+                type: array
+                items:
+                  type: number
+            - type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+
+    TrailInfo:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectid
+        name:
+          type: string
+        region:
+          type: string
+        country:
+          type: string
+        description:
+          type: string
+        difficulty:
+          type: string
+        duration_days:
+          type: integer
+        total_distance_km:
+          type: number
+        best_season:
+          type: array
+          items:
+            type: string
+        major_highlights:
+          type: array
+          items:
+            type: string
+        starting_point:
+          type: object
+          properties:
+            name:
+              type: string
+            altitude_m:
+              type: number
+        ending_point:
+          type: object
+          properties:
+            name:
+              type: string
+            altitude_m:
+              type: number
+        altitude_min_m:
+          type: number
+        altitude_max_m:
+          type: number
+        permit_required:
+          type: array
+          items:
+            type: string
+        environment:
+          type: object
+        user_content:
+          type: object
+          properties:
+            rating_avg:
+              type: number
+            rating_count:
+              type: integer
+        image:
+          type: string
+          nullable: true
+        isFeatured:
+          type: boolean
+        trailId:
+          type: string
+          format: objectid
+          nullable: true
+        activityType:
+          type: string
+          enum: [Hike, Trekking, City Tour]
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+        error:
+          type: string
+          nullable: true
+
+
