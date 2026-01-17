@@ -56,12 +56,16 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.get('/api-docs', (req, res) => {
-    res.sendFile(path.join(__dirname, '../docs/api-documentation.html'));
-});
-
 app.get('/api-docs/app', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/app-api-swagger.html'));
+});
+
+app.get('/api-docs/web', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/web-api-swagger.html'));
+});
+
+app.get('/api-docs/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/admin-api-swagger.html'));
 });
 
 // Web API Routes
