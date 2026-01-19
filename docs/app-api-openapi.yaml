@@ -1050,7 +1050,7 @@ paths:
       summary: Get all trails
       description: |
         Browse and search trails with pagination, filtering, sorting, and optional geospatial queries.
-        Returns minimal fields with simplified geometry optimized for mobile list views.
+        Returns full geometry coordinates with all trail details for mobile list views.
       operationId: getAllTrails
       security: []
       parameters:
@@ -1174,7 +1174,7 @@ paths:
                       image: "https://cloudinary.com/..."
                       geometry:
                         type: "LineString"
-                        coordinates: [[86.85, 27.99], [86.87, 28.01]]
+                        coordinates: [[86.85, 27.99], [86.86, 28.00], [86.87, 28.01], [86.88, 28.02], [86.89, 28.03]]
                       hasTrailInfo: true
                   pagination:
                     page: 1
@@ -1748,7 +1748,7 @@ components:
         geometry:
           type: object
           nullable: true
-          description: Simplified geometry (first/last point or bounding box)
+          description: Full geometry with complete coordinates (all points, not simplified)
           properties:
             type:
               type: string
