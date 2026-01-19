@@ -272,7 +272,7 @@ export const getAllTrails = async (req, res) => {
       });
     }
 
-    // Transform trails for list view (minimal fields)
+    // Transform trails for list view (with full geometry)
     const transformedTrails = filteredTrails.map((trail) => {
       const trailInfo = trail.trailInfo || null;
       const hasTrailInfoFlag = !!trailInfo;
@@ -289,7 +289,7 @@ export const getAllTrails = async (req, res) => {
         rating_avg: trailInfo?.user_content?.rating_avg || null,
         rating_count: trailInfo?.user_content?.rating_count || null,
         image: trailInfo?.image || null,
-        geometry: simplifyGeometry(trail.geometry),
+        geometry: trail.geometry, // Full geometry coordinates
         hasTrailInfo: hasTrailInfoFlag,
       };
     });
