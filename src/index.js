@@ -7,7 +7,8 @@ import connectDB from './config/db.js';
 import dotenv from 'dotenv';
 // Web Routes
 import userRoutes from './routes/web/userAuthRoutes.js';
-import guideRoutes from './routes/web/guideAuthRoutes.js';
+import guideAuthRoutes from './routes/web/guideAuthRoutes.js';
+import guideRoutes from './routes/web/guideRoutes.js';
 import trailRoutes from './routes/web/trailRoutes.js';
 import trailInfoRoutes from './routes/web/trailInfoRoutes.js';
 
@@ -70,7 +71,8 @@ app.get('/api-docs/admin', (req, res) => {
 
 // Web API Routes
 app.use("/api/web/auth/user", userRoutes);
-app.use("/api/web/auth/guide", guideRoutes);
+app.use("/api/web/auth/guide", guideAuthRoutes);
+app.use("/api/web/guides", guideRoutes);
 app.use("/api/web/trails", trailRoutes);
 app.use("/api/web/trail-info", trailInfoRoutes);
 
