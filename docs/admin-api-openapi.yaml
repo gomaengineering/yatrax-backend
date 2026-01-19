@@ -1004,6 +1004,44 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /trail-info:
+    get:
+      tags:
+        - Trail Info Management
+      summary: Get all trail info
+      description: Get all trail information records. Public endpoint (no authentication required).
+      operationId: getAllTrailInfo
+      security: []
+      parameters:
+        - name: isFeatured
+          in: query
+          schema:
+            type: boolean
+          description: Filter by featured status
+      responses:
+        '200':
+          description: Trail info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 25
+                  trailInfo:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TrailInfo'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     post:
       tags:
         - Trail Info Management
@@ -1128,7 +1166,105 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /trail-info/featured:
+    get:
+      tags:
+        - Trail Info Management
+      summary: Get featured trails
+      description: Get all featured trails in a simplified format. Public endpoint (no authentication required).
+      operationId: getFeaturedTrails
+      security: []
+      responses:
+        '200':
+          description: Featured trails retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 10
+                  trails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: objectid
+                        name:
+                          type: string
+                        region:
+                          type: string
+                        country:
+                          type: string
+                        difficulty:
+                          type: string
+                        duration_days:
+                          type: integer
+                        activityType:
+                          type: string
+                        image:
+                          type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /trail-info/{id}:
+    get:
+      tags:
+        - Trail Info Management
+      summary: Get trail info by ID
+      description: Get a specific trail information record by ID. Public endpoint (no authentication required).
+      operationId: getTrailInfoById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Trail info ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Trail info retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  trailInfo:
+                    $ref: '#/components/schemas/TrailInfo'
+        '400':
+          description: Invalid trail info ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail info not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
     put:
       tags:
         - Trail Info Management

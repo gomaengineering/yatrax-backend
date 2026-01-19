@@ -5,7 +5,7 @@ import { validateQuery, validateParams } from "../../middleware/appValidator.js"
 
 const router = express.Router();
 
-// Get all trails with pagination and filtering
+// Get all trails with pagination and filtering (public endpoint - no authentication required)
 router.get(
   "/",
   validateQuery({
