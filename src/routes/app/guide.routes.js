@@ -1,11 +1,18 @@
 // routes/app/guide.routes.js
 import express from "express";
-import { getAllGuides, getGuideById } from "../../controllers/app/appGuideController.js";
-import { validateQuery, validateParams } from "../../middleware/appValidator.js";
+import {
+  getAllGuides,
+  getGuideById,
+  createGuide,
+  updateGuide,
+  deleteGuide,
+} from "../../controllers/app/appGuideController.js";
+import { validateQuery, validateParams, validateBody } from "../../middleware/appValidator.js";
+import { appProtect } from "../../middleware/appAuthMiddleware.js";
 
 const router = express.Router();
 
-// Get all guides with pagination and filtering
+// Get all guides with pagination and filtering (public)
 router.get(
   "/",
   validateQuery({
@@ -51,7 +58,7 @@ router.get(
   getAllGuides
 );
 
-// Get guide by ID (detailed view)
+// Get guide by ID (detailed view) (public)
 router.get(
   "/:id",
   validateParams({
@@ -62,6 +69,197 @@ router.get(
     },
   }),
   getGuideById
+);
+
+// Create guide (requires authentication)
+router.post(
+  "/",
+  appProtect,
+  validateBody({
+    firstName: {
+      required: true,
+      type: "string",
+      minLength: 1,
+      maxLength: 50,
+    },
+    lastName: {
+      required: true,
+      type: "string",
+      minLength: 1,
+      maxLength: 50,
+    },
+    email: {
+      required: true,
+      type: "string",
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      patternMessage: "Please provide a valid email address",
+    },
+    password: {
+      required: true,
+      type: "string",
+      minLength: 8,
+    },
+    description: {
+      required: true,
+      type: "string",
+      minLength: 1,
+    },
+    TBNumber: {
+      required: true,
+      type: "string",
+    },
+    trekAreas: {
+      required: true,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    experience: {
+      required: true,
+      type: "integer",
+      min: 0,
+    },
+    education: {
+      required: true,
+      type: "string",
+    },
+    languages: {
+      required: true,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    ratePerDay: {
+      required: true,
+      type: "number",
+      min: 0,
+    },
+    certifications: {
+      required: true,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    role: {
+      required: false,
+      type: "string",
+      enum: ["guide", "admin"],
+    },
+    _whitelist: true, // Only allow these fields
+  }),
+  createGuide
+);
+
+// Update guide (requires authentication)
+router.put(
+  "/:id",
+  appProtect,
+  validateParams({
+    id: {
+      required: true,
+      type: "string",
+      isObjectId: true,
+    },
+  }),
+  validateBody({
+    firstName: {
+      required: false,
+      type: "string",
+      minLength: 1,
+      maxLength: 50,
+    },
+    lastName: {
+      required: false,
+      type: "string",
+      minLength: 1,
+      maxLength: 50,
+    },
+    email: {
+      required: false,
+      type: "string",
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      patternMessage: "Please provide a valid email address",
+    },
+    password: {
+      required: false,
+      type: "string",
+      minLength: 8,
+    },
+    description: {
+      required: false,
+      type: "string",
+      minLength: 1,
+    },
+    TBNumber: {
+      required: false,
+      type: "string",
+    },
+    trekAreas: {
+      required: false,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    experience: {
+      required: false,
+      type: "integer",
+      min: 0,
+    },
+    education: {
+      required: false,
+      type: "string",
+    },
+    languages: {
+      required: false,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    ratePerDay: {
+      required: false,
+      type: "number",
+      min: 0,
+    },
+    certifications: {
+      required: false,
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "string",
+      },
+    },
+    role: {
+      required: false,
+      type: "string",
+      enum: ["guide", "admin"],
+    },
+    _whitelist: true, // Only allow these fields
+  }),
+  updateGuide
+);
+
+// Delete guide (requires authentication)
+router.delete(
+  "/:id",
+  appProtect,
+  validateParams({
+    id: {
+      required: true,
+      type: "string",
+      isObjectId: true,
+    },
+  }),
+  deleteGuide
 );
 
 export default router;
