@@ -220,6 +220,6 @@ trailSchema.statics.populateTrailInfo = async function(trails) {
   return trails;
 };
 
-const Trail = mongoose.model("Trail", trailSchema);
+const Trail = mongoose.models.Trail || mongoose.model("Trail", trailSchema);
 export default Trail;
 

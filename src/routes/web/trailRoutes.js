@@ -1,4 +1,4 @@
-// routes/trailRoutes.js
+// routes/web/trailRoutes.js
 import express from "express";
 import {
   createTrail,
@@ -11,7 +11,7 @@ import {
   findTrailsWithin,
   findTrailsWithinRadius,
   findTrailsIntersecting,
-} from "../controllers/trailController.js";
+} from "../../controllers/web/trailController.js";
 
 const router = express.Router();
 

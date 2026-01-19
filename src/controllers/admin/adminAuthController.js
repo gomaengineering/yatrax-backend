@@ -1,7 +1,7 @@
-// controllers/adminAuthController.js
-import User from "../models/userModel.js";
-import Guide from "../models/guideModel.js";
-import generateToken from "../utils/generateToken.js";
+// controllers/admin/adminAuthController.js
+import User from "../../models/userModel.js";
+import Guide from "../../models/guideModel.js";
+import generateToken from "../../utils/generateToken.js";
 
 // ADMIN LOGIN (Can login as admin from User or Guide model)
 export const loginAdmin = async (req, res) => {

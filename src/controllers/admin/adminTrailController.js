@@ -1,5 +1,5 @@
-// controllers/adminTrailController.js
-import Trail from "../models/trailModel.js";
+// controllers/admin/adminTrailController.js
+import Trail from "../../models/trailModel.js";
 
 // GET ALL TRAILS (Admin version with more filters)
 export const getAllTrails = async (req, res) => {

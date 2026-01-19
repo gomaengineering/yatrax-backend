@@ -1,6 +1,6 @@
-// controllers/adminUserController.js
-import User from "../models/userModel.js";
-import generateToken from "../utils/generateToken.js";
+// controllers/admin/adminUserController.js
+import User from "../../models/userModel.js";
+import generateToken from "../../utils/generateToken.js";
 
 // GET ALL USERS
 export const getAllUsers = async (req, res) => {
