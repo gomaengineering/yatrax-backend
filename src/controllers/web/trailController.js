@@ -1,5 +1,5 @@
-// controllers/trailController.js
-import Trail from "../models/trailModel.js";
+// controllers/web/trailController.js
+import Trail from "../../models/trailModel.js";
 
 // 🗺️ CREATE TRAIL (Save GeoJSON Feature)
 export const createTrail = async (req, res) => {
@@ -485,3 +485,4 @@ export const findTrailsIntersecting = async (req, res) => {
     });
   }
 };
+

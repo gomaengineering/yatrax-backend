@@ -1,0 +1,1899 @@
+openapi: 3.0.3
+info:
+  title: YatraX App API
+  description: |
+    RESTful API for YatraX mobile application.
+    
+    ## Authentication
+    The API uses token-based authentication with short-lived access tokens and refresh tokens.
+    - Access tokens expire in 15 minutes (default)
+    - Refresh tokens expire in 7 days (default)
+    - Include access token in Authorization header: `Bearer <accessToken>`
+    
+    ## Rate Limiting
+    - General endpoints: 100 requests per 15 minutes per IP
+    - Login endpoint: 5 attempts per 15 minutes per email/IP
+    - Refresh token endpoint: 10 attempts per 15 minutes per IP
+    
+    ## Error Handling
+    All errors follow a consistent format with error codes for programmatic handling.
+  version: 1.0.0
+  contact:
+    name: YatraX API Support
+    email: support@yatrax.com
+
+servers:
+  - url: http://localhost:8000/api/v1/app
+    description: Development server
+  - url: https://api.yatrax.com/api/v1/app
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and token management
+  - name: User Profile
+    description: User profile management
+  - name: Guides
+    description: Guide CRUD operations and browsing
+  - name: Trails
+    description: Trail browsing, details, and geospatial queries (read-only)
+  - name: Trail Info
+    description: Trail information and metadata (read-only)
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Authenticate user with email and password. Returns access token and refresh token.
+        Access token is short-lived (15 minutes), refresh token is long-lived (7 days).
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                  example: user@example.com
+                  description: User email address
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  example: password123
+                  description: User password (minimum 8 characters)
+                deviceId:
+                  type: string
+                  maxLength: 255
+                  example: "device-12345"
+                  description: Optional device identifier for tracking
+                deviceInfo:
+                  type: object
+                  example:
+                    platform: "iOS"
+                    model: "iPhone 14"
+                    osVersion: "16.0"
+                  description: Optional device information
+            examples:
+              basic:
+                summary: Basic login
+                value:
+                  email: user@example.com
+                  password: password123
+              withDevice:
+                summary: Login with device info
+                value:
+                  email: user@example.com
+                  password: password123
+                  deviceId: "device-12345"
+                  deviceInfo:
+                    platform: "iOS"
+                    model: "iPhone 14"
+                    osVersion: "16.0"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  summary: Successful login
+                  value:
+                    success: true
+                    message: "Login successful"
+                    data:
+                      accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      refreshToken: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+                      user:
+                        id: "507f1f77bcf86cd799439011"
+                        firstName: "John"
+                        lastName: "Doe"
+                        email: "user@example.com"
+                        country: "Nepal"
+                        role: "user"
+                        subscription: "free"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    message: "Validation failed"
+                    error:
+                      code: "VALIDATION_ERROR"
+                      type: "validation_error"
+                      errors:
+                        email: ["Email is required"]
+                        password: ["Password is required"]
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    message: "Validation failed"
+                    error:
+                      code: "VALIDATION_ERROR"
+                      type: "validation_error"
+                      errors:
+                        email: ["Please provide a valid email address"]
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  summary: Invalid credentials
+                  value:
+                    success: false
+                    message: "Invalid email or password."
+                    error:
+                      code: "INVALID_CREDENTIALS"
+                      type: "authentication_error"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Too many login attempts. Please try again after 15 minutes."
+                error:
+                  code: "AUTH_RATE_LIMIT_EXCEEDED"
+                  type: "rate_limit_error"
+                  retryAfter: "15 minutes"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "An unexpected error occurred. Please try again later."
+                error:
+                  code: "SERVER_ERROR"
+                  type: "server_error"
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: |
+        Refresh the access token using a valid refresh token.
+        The refresh token is rotated (new one issued, old one revoked) for security.
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  minLength: 64
+                  maxLength: 64
+                  example: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+                  description: Refresh token (64 hex characters)
+                deviceId:
+                  type: string
+                  maxLength: 255
+                  example: "device-12345"
+                  description: Optional device identifier
+                deviceInfo:
+                  type: object
+                  example:
+                    platform: "iOS"
+                    model: "iPhone 14"
+                    osVersion: "16.0"
+                  description: Optional device information
+            example:
+              refreshToken: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+              example:
+                success: true
+                message: "Token refreshed successfully"
+                data:
+                  accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refreshToken: "xyz789abc123def456ghi789jkl012mno345pqr678"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Validation failed"
+                error:
+                  code: "VALIDATION_ERROR"
+                  type: "validation_error"
+                  errors:
+                    refreshToken: ["Refresh token is required"]
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidToken:
+                  summary: Invalid refresh token
+                  value:
+                    success: false
+                    message: "Invalid or revoked refresh token."
+                    error:
+                      code: "INVALID_REFRESH_TOKEN"
+                      type: "authentication_error"
+                expiredToken:
+                  summary: Expired refresh token
+                  value:
+                    success: false
+                    message: "Refresh token has expired. Please login again."
+                    error:
+                      code: "REFRESH_TOKEN_EXPIRED"
+                      type: "authentication_error"
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Too many token refresh attempts. Please try again later."
+                error:
+                  code: "REFRESH_RATE_LIMIT_EXCEEDED"
+                  type: "rate_limit_error"
+                  retryAfter: "15 minutes"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: |
+        Logout user and revoke refresh token(s).
+        Can work with refresh token in body (no auth required) or access token in header (revokes all tokens).
+      operationId: logout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  minLength: 64
+                  maxLength: 64
+                  example: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+                  description: Optional refresh token to revoke specific device session
+            example:
+              refreshToken: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+              example:
+                success: true
+                message: "Logged out successfully"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required (if using access token method)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Authentication required. Please provide a valid access token."
+                error:
+                  code: "NO_TOKEN"
+                  type: "authentication_error"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /profile:
+    get:
+      tags:
+        - User Profile
+      summary: Get user profile
+      description: Get the authenticated user's profile information.
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439011"
+                  firstName: "John"
+                  lastName: "Doe"
+                  email: "user@example.com"
+                  country: "Nepal"
+                  role: "user"
+                  subscription: "free"
+                  createdAt: "2024-01-15T10:30:00.000Z"
+                  updatedAt: "2024-01-20T14:22:00.000Z"
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                noToken:
+                  summary: No token provided
+                  value:
+                    success: false
+                    message: "Authentication required. Please provide a valid access token."
+                    error:
+                      code: "NO_TOKEN"
+                      type: "authentication_error"
+                expiredToken:
+                  summary: Token expired
+                  value:
+                    success: false
+                    message: "Access token has expired. Please refresh your token."
+                    error:
+                      code: "TOKEN_EXPIRED"
+                      type: "authentication_error"
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "User account not found."
+                error:
+                  code: "USER_NOT_FOUND"
+                  type: "authentication_error"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Profile
+      summary: Update user profile
+      description: |
+        Update the authenticated user's profile. Only firstName, lastName, and country can be updated.
+        Partial updates are supported - only provided fields will be updated.
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "John"
+                  description: User's first name
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Smith"
+                  description: User's last name
+                country:
+                  type: string
+                  maxLength: 100
+                  nullable: true
+                  example: "Nepal"
+                  description: User's country (can be null)
+            examples:
+              updateFirstName:
+                summary: Update first name only
+                value:
+                  firstName: "John"
+              updateAll:
+                summary: Update all fields
+                value:
+                  firstName: "John"
+                  lastName: "Smith"
+                  country: "Nepal"
+              clearCountry:
+                summary: Clear country (set to null)
+                value:
+                  country: null
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+              example:
+                success: true
+                message: "Profile updated successfully"
+                data:
+                  id: "507f1f77bcf86cd799439011"
+                  firstName: "John"
+                  lastName: "Smith"
+                  email: "user@example.com"
+                  country: "Nepal"
+                  role: "user"
+                  subscription: "free"
+                  createdAt: "2024-01-15T10:30:00.000Z"
+                  updatedAt: "2024-01-20T15:30:00.000Z"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validationError:
+                  summary: Field validation errors
+                  value:
+                    success: false
+                    message: "Validation failed"
+                    error:
+                      code: "VALIDATION_ERROR"
+                      type: "validation_error"
+                      errors:
+                        firstName: ["First name cannot be empty"]
+                        lastName: ["Last name must be at least 1 character"]
+                restrictedFields:
+                  summary: Restricted fields attempted
+                  value:
+                    success: false
+                    message: "Cannot update email, password, role, or subscription through this endpoint"
+                unknownFields:
+                  summary: Unknown fields provided
+                  value:
+                    success: false
+                    message: "Unknown fields: email, password. Allowed fields: firstName, lastName, country"
+                    error:
+                      code: "VALIDATION_ERROR"
+                      type: "validation_error"
+                      errors:
+                        _unknown: ["Unknown fields: email, password"]
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides:
+    get:
+      tags:
+        - Guides
+      summary: Get all guides
+      description: |
+        Browse and search guides with pagination, filtering, and sorting.
+        Returns minimal fields optimized for mobile list views.
+      operationId: getAllGuides
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Number of results per page (max 50)
+        - name: trekAreas
+          in: query
+          schema:
+            type: string
+          description: Filter by trekking areas (comma-separated)
+          example: "Everest,Annapurna"
+        - name: minExperience
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum years of experience
+        - name: maxRatePerDay
+          in: query
+          schema:
+            type: number
+            minimum: 0
+          description: Maximum rate per day
+        - name: languages
+          in: query
+          schema:
+            type: string
+          description: Filter by languages (comma-separated)
+          example: "English,Nepali"
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in name, description, education
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, experience, ratePerDay, name]
+            default: createdAt
+          description: Sort order
+      responses:
+        '200':
+          description: Guides retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      guides:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GuideListItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+              example:
+                success: true
+                data:
+                  guides:
+                    - id: "507f1f77bcf86cd799439021"
+                      name: "Sherpa Tenzing"
+                      description: "Experienced mountain guide with 10+ years..."
+                      trekAreas: ["Everest Base Camp", "Annapurna Circuit"]
+                      experience: 10
+                      languages: ["English", "Nepali", "Tibetan"]
+                      ratePerDay: 5000
+                      certifications: ["IFMGA Certified", "Wilderness First Aid"]
+                      education: "Mountain Guide Certification"
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 45
+                    pages: 3
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides/{id}:
+    get:
+      tags:
+        - Guides
+      summary: Get guide by ID
+      description: Get detailed guide information with all professional details.
+      operationId: getGuideById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Guide retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439021"
+                  firstName: "Sherpa"
+                  lastName: "Tenzing"
+                  name: "Sherpa Tenzing"
+                  description: "Experienced mountain guide with 10+ years of experience in the Himalayas..."
+                  trekAreas: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+                  experience: 10
+                  education: "Mountain Guide Certification, Advanced Wilderness First Aid"
+                  languages: ["English", "Nepali", "Tibetan", "Hindi"]
+                  ratePerDay: 5000
+                  certifications:
+                    - "IFMGA Certified"
+                    - "Wilderness First Aid"
+                    - "High Altitude Rescue"
+        '400':
+          description: Invalid guide ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Guides
+      summary: Create a new guide
+      description: Create a new guide profile. Requires authentication.
+      operationId: createGuide
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - description
+                - TBNumber
+                - trekAreas
+                - experience
+                - education
+                - languages
+                - ratePerDay
+                - certifications
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Sherpa"
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Tenzing"
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                  example: "tenzing@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  example: "password123"
+                description:
+                  type: string
+                  minLength: 1
+                  example: "Experienced mountain guide with 10+ years of experience"
+                TBNumber:
+                  type: string
+                  example: "TB-12345"
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+                experience:
+                  type: integer
+                  minimum: 0
+                  example: 10
+                education:
+                  type: string
+                  example: "Mountain Guide Certification, IFMGA"
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["English", "Nepali", "Tibetan", "Sherpa"]
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                  example: 5000
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["IFMGA Certified", "Wilderness First Aid", "Avalanche Safety"]
+                role:
+                  type: string
+                  enum: [guide, admin]
+                  default: guide
+      responses:
+        '201':
+          description: Guide created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide created successfully"
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or TBNumber already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Guides
+      summary: Update guide
+      description: Update an existing guide's information. Requires authentication.
+      operationId: updateGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                description:
+                  type: string
+                  minLength: 1
+                TBNumber:
+                  type: string
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                experience:
+                  type: integer
+                  minimum: 0
+                education:
+                  type: string
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                role:
+                  type: string
+                  enum: [guide, admin]
+      responses:
+        '200':
+          description: Guide updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide updated successfully"
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+        '400':
+          description: Validation error or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or TBNumber already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Guides
+      summary: Delete guide
+      description: Delete a guide by ID. Requires authentication.
+      operationId: deleteGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Guide deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide deleted successfully"
+        '400':
+          description: Invalid guide ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails:
+    get:
+      tags:
+        - Trails
+      summary: Get all trails
+      description: |
+        Browse and search trails with pagination, filtering, sorting, and optional geospatial queries.
+        Returns minimal fields with simplified geometry optimized for mobile list views.
+      operationId: getAllTrails
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number (1-based)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+          description: Number of results per page (max 50)
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Search trail name (case-insensitive)
+        - name: difficulty
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+          description: Filter by difficulty (numeric)
+        - name: activityType
+          in: query
+          schema:
+            type: string
+            enum: [Hike, Trekking, City Tour]
+          description: Filter by activity type (from TrailInfo)
+        - name: region
+          in: query
+          schema:
+            type: string
+          description: Filter by region (from TrailInfo)
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter by country (from TrailInfo)
+        - name: hasTrailInfo
+          in: query
+          schema:
+            type: string
+            enum: [true, false]
+          description: Filter trails with/without TrailInfo
+        - name: minRating
+          in: query
+          schema:
+            type: number
+            minimum: 0
+            maximum: 5
+          description: Minimum rating (0-5)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, name, difficulty, rating]
+            default: createdAt
+          description: Sort order
+        - name: longitude
+          in: query
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          description: Longitude for geospatial filter
+        - name: latitude
+          in: query
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          description: Latitude for geospatial filter
+        - name: radius
+          in: query
+          schema:
+            type: number
+            minimum: 0.1
+            maximum: 100
+          description: Radius in kilometers for geospatial filter (max 100km)
+      responses:
+        '200':
+          description: Trails retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      trails:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TrailListItem'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+              example:
+                success: true
+                data:
+                  trails:
+                    - id: "507f1f77bcf86cd799439021"
+                      name: "Everest Base Camp Trek"
+                      difficulty: 4
+                      activityType: "Trekking"
+                      region: "Khumbu"
+                      country: "Nepal"
+                      duration_days: 14
+                      total_distance_km: 130
+                      rating_avg: 4.8
+                      rating_count: 245
+                      image: "https://cloudinary.com/..."
+                      geometry:
+                        type: "LineString"
+                        coordinates: [[86.85, 27.99], [86.87, 28.01]]
+                      hasTrailInfo: true
+                  pagination:
+                    page: 1
+                    limit: 20
+                    total: 45
+                    pages: 3
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails/{id}:
+    get:
+      tags:
+        - Trails
+      summary: Get trail by ID
+      description: Get detailed trail information with full geometry and complete TrailInfo.
+      operationId: getTrailById
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Trail ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Trail retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TrailDetail'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439021"
+                  type: "Feature"
+                  geometry:
+                    type: "LineString"
+                    coordinates: [[86.85, 27.99], [86.87, 28.01], [86.89, 28.03]]
+                  properties:
+                    fid: 123
+                    id: 456
+                    name: "Everest Base Camp Trek"
+                    difficulty: 4
+                  trailInfo:
+                    id: "507f1f77bcf86cd799439022"
+                    name: "Everest Base Camp Trek"
+                    region: "Khumbu"
+                    country: "Nepal"
+                    description: "Full description..."
+                    difficulty: "Challenging"
+                    activityType: "Trekking"
+                    duration_days: 14
+                    total_distance_km: 130
+                    best_season: ["March", "April", "May"]
+                    major_highlights: ["Everest Base Camp", "Kala Patthar"]
+                    starting_point:
+                      name: "Lukla"
+                      altitude_m: 2840
+                    ending_point:
+                      name: "Everest Base Camp"
+                      altitude_m: 5364
+                    altitude_min_m: 2840
+                    altitude_max_m: 5364
+                    permit_required: ["Sagarmatha National Park Permit"]
+                    environment:
+                      wildlife: ["Snow Leopard"]
+                      local_culture: "Sherpa culture..."
+                      climate_conditions: "Alpine climate..."
+                      conservation_rules: "Leave no trace..."
+                    user_content:
+                      rating_avg: 4.8
+                      rating_count: 245
+                    image: "https://cloudinary.com/..."
+        '400':
+          description: Invalid trail ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /trails/{trailId}/info:
+    get:
+      tags:
+        - Trail Info
+      summary: Get TrailInfo for a trail
+      description: |
+        Get TrailInfo (detailed metadata) for a specific trail.
+        TrailInfo must be linked to the specified trail.
+      operationId: getTrailInfoByTrailId
+      security: []
+      parameters:
+        - name: trailId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Trail ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: TrailInfo retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/TrailInfo'
+              example:
+                success: true
+                data:
+                  id: "507f1f77bcf86cd799439022"
+                  name: "Everest Base Camp Trek"
+                  region: "Khumbu"
+                  country: "Nepal"
+                  description: "A challenging trek to the base of the world's highest mountain..."
+                  difficulty: "Challenging"
+                  activityType: "Trekking"
+                  duration_days: 14
+                  total_distance_km: 130
+                  best_season: ["March", "April", "May", "October", "November"]
+                  major_highlights:
+                    - "Everest Base Camp"
+                    - "Kala Patthar"
+                    - "Namche Bazaar"
+                  starting_point:
+                    name: "Lukla"
+                    altitude_m: 2840
+                  ending_point:
+                    name: "Everest Base Camp"
+                    altitude_m: 5364
+                  altitude_min_m: 2840
+                  altitude_max_m: 5364
+                  permit_required:
+                    - "Sagarmatha National Park Permit"
+                    - "TIMS Card"
+                  environment:
+                    wildlife: ["Snow Leopard", "Himalayan Tahr"]
+                    local_culture: "Rich Sherpa culture..."
+                    climate_conditions: "Alpine climate..."
+                    conservation_rules: "Leave no trace principles..."
+                  user_content:
+                    rating_avg: 4.8
+                    rating_count: 245
+                  image: "https://cloudinary.com/..."
+        '400':
+          description: Invalid trail ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Trail or TrailInfo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                trailNotFound:
+                  summary: Trail not found
+                  value:
+                    success: false
+                    message: "Trail not found"
+                    error:
+                      code: "RESOURCE_NOT_FOUND"
+                      type: "resource_error"
+                trailInfoNotFound:
+                  summary: TrailInfo not found for trail
+                  value:
+                    success: false
+                    message: "Trail information not found for this trail"
+                    error:
+                      code: "RESOURCE_NOT_FOUND"
+                      type: "resource_error"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT access token. Include in Authorization header as: `Bearer <accessToken>`
+        Access tokens expire in 15 minutes (default). Use refresh token endpoint to get new access token.
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439011"
+          description: User ID (MongoDB ObjectId)
+        firstName:
+          type: string
+          example: "John"
+          description: User's first name
+        lastName:
+          type: string
+          example: "Doe"
+          description: User's last name
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+          description: User's email address
+        country:
+          type: string
+          nullable: true
+          example: "Nepal"
+          description: User's country
+        role:
+          type: string
+          enum: [user, porter, admin]
+          example: "user"
+          description: User role
+        subscription:
+          type: string
+          enum: [free, premium]
+          example: "free"
+          description: Subscription type
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+          description: Account creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-20T14:22:00.000Z"
+          description: Last update timestamp
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login successful"
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              description: JWT access token (expires in 15 minutes)
+            refreshToken:
+              type: string
+              example: "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+              description: Refresh token (64 hex characters, expires in 7 days)
+            user:
+              $ref: '#/components/schemas/User'
+
+    RefreshResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Token refreshed successfully"
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              description: New JWT access token
+            refreshToken:
+              type: string
+              example: "xyz789abc123def456ghi789jkl012mno345pqr678"
+              description: New refresh token (old one is revoked)
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Profile updated successfully"
+          description: Present only for update operations
+        data:
+          $ref: '#/components/schemas/User'
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred"
+          description: User-friendly error message
+        error:
+          type: object
+          required:
+            - code
+            - type
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+              description: |
+                Error code for programmatic handling. Common codes:
+                - Authentication: NO_TOKEN, INVALID_TOKEN, TOKEN_EXPIRED, INVALID_CREDENTIALS
+                - Authorization: ACCESS_DENIED, INVALID_ROLE
+                - Validation: VALIDATION_ERROR, MISSING_REQUIRED_FIELD, INVALID_FIELD_VALUE
+                - Resources: RESOURCE_NOT_FOUND, RESOURCE_ALREADY_EXISTS
+                - Rate Limiting: RATE_LIMIT_EXCEEDED, AUTH_RATE_LIMIT_EXCEEDED
+                - Server: SERVER_ERROR, DATABASE_ERROR
+            type:
+              type: string
+              enum:
+                - authentication_error
+                - authorization_error
+                - validation_error
+                - rate_limit_error
+                - resource_error
+                - server_error
+                - client_error
+              example: "validation_error"
+              description: Error category
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                email: ["Email is required", "Invalid email format"]
+                password: ["Password must be at least 8 characters"]
+              description: Field-level validation errors (for validation errors)
+            details:
+              type: object
+              description: Additional error context
+            retryAfter:
+              type: string
+              example: "15 minutes"
+              description: Retry after duration (for rate limit errors)
+
+    DeviceInfo:
+      type: object
+      properties:
+        platform:
+          type: string
+          example: "iOS"
+          description: Device platform (iOS, Android, etc.)
+        model:
+          type: string
+          example: "iPhone 14"
+          description: Device model
+        osVersion:
+          type: string
+          example: "16.0"
+          description: Operating system version
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          example: 20
+          description: Results per page
+        total:
+          type: integer
+          example: 45
+          description: Total number of results
+        pages:
+          type: integer
+          example: 3
+          description: Total number of pages
+
+    GuideListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        name:
+          type: string
+          example: "Sherpa Tenzing"
+          description: Full name (firstName + lastName)
+        description:
+          type: string
+          example: "Experienced mountain guide with 10+ years..."
+          description: Truncated description (200 chars max)
+        trekAreas:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Annapurna Circuit"]
+        experience:
+          type: integer
+          example: 10
+          description: Years of experience
+        languages:
+          type: array
+          items:
+            type: string
+          example: ["English", "Nepali", "Tibetan"]
+        ratePerDay:
+          type: number
+          example: 5000
+          description: Rate per day
+        certifications:
+          type: array
+          items:
+            type: string
+          example: ["IFMGA Certified", "Wilderness First Aid"]
+          description: First 3 certifications only
+        education:
+          type: string
+          example: "Mountain Guide Certification"
+
+    GuideDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        firstName:
+          type: string
+          example: "Sherpa"
+        lastName:
+          type: string
+          example: "Tenzing"
+        name:
+          type: string
+          example: "Sherpa Tenzing"
+        description:
+          type: string
+          example: "Experienced mountain guide with 10+ years of experience..."
+          description: Full description
+        trekAreas:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+        experience:
+          type: integer
+          example: 10
+        education:
+          type: string
+          example: "Mountain Guide Certification, Advanced Wilderness First Aid"
+        languages:
+          type: array
+          items:
+            type: string
+          example: ["English", "Nepali", "Tibetan", "Hindi"]
+        ratePerDay:
+          type: number
+          example: 5000
+        certifications:
+          type: array
+          items:
+            type: string
+          example: ["IFMGA Certified", "Wilderness First Aid", "High Altitude Rescue"]
+          description: All certifications
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+
+    TrailListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        name:
+          type: string
+          example: "Everest Base Camp Trek"
+        difficulty:
+          type: integer
+          nullable: true
+          example: 4
+        activityType:
+          type: string
+          nullable: true
+          enum: [Hike, Trekking, City Tour]
+          example: "Trekking"
+        region:
+          type: string
+          nullable: true
+          example: "Khumbu"
+        country:
+          type: string
+          nullable: true
+          example: "Nepal"
+        duration_days:
+          type: integer
+          nullable: true
+          example: 14
+        total_distance_km:
+          type: number
+          nullable: true
+          example: 130
+        rating_avg:
+          type: number
+          nullable: true
+          example: 4.8
+        rating_count:
+          type: integer
+          nullable: true
+          example: 245
+        image:
+          type: string
+          nullable: true
+          example: "https://cloudinary.com/..."
+        geometry:
+          type: object
+          nullable: true
+          description: Simplified geometry (first/last point or bounding box)
+          properties:
+            type:
+              type: string
+              enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+            coordinates:
+              type: array
+        hasTrailInfo:
+          type: boolean
+          example: true
+
+    TrailDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439021"
+        type:
+          type: string
+          example: "Feature"
+        geometry:
+          type: object
+          description: Full geometry with complete coordinates
+          properties:
+            type:
+              type: string
+              enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+            coordinates:
+              type: array
+        properties:
+          type: object
+          description: All trail properties
+          additionalProperties: true
+        trailInfo:
+          $ref: '#/components/schemas/TrailInfo'
+          nullable: true
+
+    TrailInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: objectid
+          example: "507f1f77bcf86cd799439022"
+        name:
+          type: string
+          example: "Everest Base Camp Trek"
+        region:
+          type: string
+          example: "Khumbu"
+        country:
+          type: string
+          example: "Nepal"
+        description:
+          type: string
+          example: "A challenging trek to the base of the world's highest mountain..."
+        difficulty:
+          type: string
+          example: "Challenging"
+        activityType:
+          type: string
+          nullable: true
+          enum: [Hike, Trekking, City Tour]
+          example: "Trekking"
+        duration_days:
+          type: integer
+          example: 14
+        total_distance_km:
+          type: number
+          example: 130
+        best_season:
+          type: array
+          items:
+            type: string
+          example: ["March", "April", "May", "October", "November"]
+        major_highlights:
+          type: array
+          items:
+            type: string
+          example: ["Everest Base Camp", "Kala Patthar", "Namche Bazaar"]
+        starting_point:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              example: "Lukla"
+            altitude_m:
+              type: number
+              example: 2840
+        ending_point:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              example: "Everest Base Camp"
+            altitude_m:
+              type: number
+              example: 5364
+        altitude_min_m:
+          type: number
+          example: 2840
+        altitude_max_m:
+          type: number
+          example: 5364
+        permit_required:
+          type: array
+          items:
+            type: string
+          example: ["Sagarmatha National Park Permit", "TIMS Card"]
+        environment:
+          type: object
+          nullable: true
+          properties:
+            wildlife:
+              type: array
+              items:
+                type: string
+              example: ["Snow Leopard", "Himalayan Tahr"]
+            local_culture:
+              type: string
+              nullable: true
+              example: "Rich Sherpa culture..."
+            climate_conditions:
+              type: string
+              nullable: true
+              example: "Alpine climate..."
+            conservation_rules:
+              type: string
+              nullable: true
+              example: "Leave no trace principles..."
+        user_content:
+          type: object
+          properties:
+            rating_avg:
+              type: number
+              minimum: 0
+              maximum: 5
+              example: 4.8
+            rating_count:
+              type: integer
+              minimum: 0
+              example: 245
+        image:
+          type: string
+          example: "https://cloudinary.com/..."
+

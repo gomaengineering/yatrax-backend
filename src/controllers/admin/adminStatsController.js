@@ -1,7 +1,7 @@
-// controllers/adminStatsController.js
-import User from "../models/userModel.js";
-import Guide from "../models/guideModel.js";
-import Trail from "../models/trailModel.js";
+// controllers/admin/adminStatsController.js
+import User from "../../models/userModel.js";
+import Guide from "../../models/guideModel.js";
+import Trail from "../../models/trailModel.js";
 
 // GET DASHBOARD STATISTICS
 export const getDashboardStats = async (req, res) => {

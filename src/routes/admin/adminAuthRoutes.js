@@ -1,7 +1,7 @@
-// routes/adminAuthRoutes.js
+// routes/admin/adminAuthRoutes.js
 import express from "express";
-import { loginAdmin, getAdminProfile } from "../controllers/adminAuthController.js";
-import { protect, adminOnly } from "../middleware/authMiddleware.js";
+import { loginAdmin, getAdminProfile } from "../../controllers/admin/adminAuthController.js";
+import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 

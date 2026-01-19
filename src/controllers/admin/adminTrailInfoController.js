@@ -1,103 +1,7 @@
-// controllers/trailInfoController.js
-import TrailInfo from "../models/trailInfoModel.js";
-import Trail from "../models/trailModel.js";
-import { uploadImage, deleteImage } from "../utils/cloudinary.js";
-
-// GET ALL TRAIL INFO
-export const getAllTrailInfo = async (req, res) => {
-  try {
-    const { isFeatured } = req.query;
-    
-    const query = {};
-    if (isFeatured !== undefined) {
-      query.isFeatured = isFeatured === 'true';
-    }
-
-    const trailInfoList = await TrailInfo.find(query).sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: trailInfoList.length,
-      trailInfo: trailInfoList,
-    });
-  } catch (error) {
-    console.error("Get all trail info error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
-  }
-};
-
-// GET FEATURED TRAILS (Specific response format)
-export const getFeaturedTrails = async (req, res) => {
-  try {
-    const featuredTrails = await TrailInfo.find()
-      .select("name region country difficulty duration_days activityType image")
-      .sort({ createdAt: -1 });
-
-    const formattedTrails = featuredTrails.map(trail => ({
-      id: trail._id,
-      name: trail.name,
-      region: trail.region,
-      country: trail.country,
-      difficulty: trail.difficulty,
-      duration_days: trail.duration_days,
-      activityType: trail.activityType,
-      image: trail.image
-    }));
-
-    res.status(200).json({
-      success: true,
-      count: formattedTrails.length,
-      trails: formattedTrails,
-    });
-  } catch (error) {
-    console.error("Get featured trails error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
-  }
-};
-
-// GET TRAIL INFO BY ID
-export const getTrailInfoById = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const trailInfo = await TrailInfo.findById(id);
-
-    if (!trailInfo) {
-      return res.status(404).json({
-        success: false,
-        message: "Trail info not found",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      trailInfo,
-    });
-  } catch (error) {
-    console.error("Get trail info by ID error:", error);
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid trail info ID",
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
-  }
-};
-
-
+// controllers/admin/adminTrailInfoController.js
+import TrailInfo from "../../models/trailInfoModel.js";
+import Trail from "../../models/trailModel.js";
+import { uploadImage, deleteImage } from "../../utils/cloudinary.js";
 
 // CREATE TRAIL INFO (Insert trail details)
 export const createTrailInfo = async (req, res) => {
@@ -481,7 +385,7 @@ export const createTrailInfo = async (req, res) => {
 export const updateTrailInfo = async (req, res) => {
   try {
     const { id } = req.params;
-    let {
+    const {
       name,
       region,
       country,
@@ -504,71 +408,6 @@ export const updateTrailInfo = async (req, res) => {
       isFeatured,
       trailId,
     } = req.body;
-
-    // Parse JSON strings if they come from FormData
-    // FormData sends nested objects as JSON strings
-    // If they're already objects (from JSON request), keep them as is
-    try {
-      if (best_season && typeof best_season === 'string' && best_season.trim()) {
-        best_season = JSON.parse(best_season);
-      }
-      if (major_highlights && typeof major_highlights === 'string' && major_highlights.trim()) {
-        major_highlights = JSON.parse(major_highlights);
-      }
-      if (starting_point && typeof starting_point === 'string' && starting_point.trim()) {
-        starting_point = JSON.parse(starting_point);
-      }
-      if (ending_point && typeof ending_point === 'string' && ending_point.trim()) {
-        ending_point = JSON.parse(ending_point);
-      }
-      if (permit_required && typeof permit_required === 'string' && permit_required.trim()) {
-        permit_required = JSON.parse(permit_required);
-      }
-      if (environment && typeof environment === 'string' && environment.trim()) {
-        environment = JSON.parse(environment);
-      }
-      if (user_content && typeof user_content === 'string' && user_content.trim()) {
-        user_content = JSON.parse(user_content);
-      }
-      // Parse numeric values that might come as strings from FormData
-      if (duration_days !== undefined && typeof duration_days === 'string') {
-        duration_days = parseInt(duration_days, 10);
-      }
-      if (total_distance_km !== undefined && typeof total_distance_km === 'string') {
-        total_distance_km = parseFloat(total_distance_km);
-      }
-      if (altitude_min_m !== undefined && typeof altitude_min_m === 'string') {
-        altitude_min_m = parseFloat(altitude_min_m);
-      }
-      if (altitude_max_m !== undefined && typeof altitude_max_m === 'string') {
-        altitude_max_m = parseFloat(altitude_max_m);
-      }
-      if (isFeatured !== undefined && typeof isFeatured === 'string') {
-        isFeatured = isFeatured === 'true';
-      }
-      
-      // Ensure starting_point and ending_point are objects after parsing
-      if (starting_point && typeof starting_point === 'object') {
-        // Ensure nested numeric values are properly typed
-        if (starting_point.altitude_m !== undefined && typeof starting_point.altitude_m === 'string') {
-          starting_point.altitude_m = parseFloat(starting_point.altitude_m);
-        }
-      }
-      if (ending_point && typeof ending_point === 'object') {
-        // Ensure nested numeric values are properly typed
-        if (ending_point.altitude_m !== undefined && typeof ending_point.altitude_m === 'string') {
-          ending_point.altitude_m = parseFloat(ending_point.altitude_m);
-        }
-      }
-    } catch (parseError) {
-      console.error('Error parsing FormData fields:', parseError);
-      console.error('Request body:', req.body);
-      return res.status(400).json({
-        success: false,
-        message: "Error parsing request data. Please ensure all fields are properly formatted.",
-        error: parseError.message,
-      });
-    }
 
     // Check if trail info exists
     const trailInfo = await TrailInfo.findById(id);
