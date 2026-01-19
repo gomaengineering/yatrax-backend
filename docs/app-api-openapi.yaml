@@ -34,7 +34,7 @@ tags:
   - name: User Profile
     description: User profile management
   - name: Guides
-    description: Guide browsing and details (read-only)
+    description: Guide CRUD operations and browsing
   - name: Trails
     description: Trail browsing, details, and geospatial queries (read-only)
   - name: Trail Info
@@ -742,6 +742,307 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+    post:
+      tags:
+        - Guides
+      summary: Create a new guide
+      description: Create a new guide profile. Requires authentication.
+      operationId: createGuide
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - description
+                - TBNumber
+                - trekAreas
+                - experience
+                - education
+                - languages
+                - ratePerDay
+                - certifications
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Sherpa"
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Tenzing"
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                  example: "tenzing@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  example: "password123"
+                description:
+                  type: string
+                  minLength: 1
+                  example: "Experienced mountain guide with 10+ years of experience"
+                TBNumber:
+                  type: string
+                  example: "TB-12345"
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["Everest Base Camp", "Annapurna Circuit", "Langtang Valley"]
+                experience:
+                  type: integer
+                  minimum: 0
+                  example: 10
+                education:
+                  type: string
+                  example: "Mountain Guide Certification, IFMGA"
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["English", "Nepali", "Tibetan", "Sherpa"]
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                  example: 5000
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                  example: ["IFMGA Certified", "Wilderness First Aid", "Avalanche Safety"]
+                role:
+                  type: string
+                  enum: [guide, admin]
+                  default: guide
+      responses:
+        '201':
+          description: Guide created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide created successfully"
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or TBNumber already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Guides
+      summary: Update guide
+      description: Update an existing guide's information. Requires authentication.
+      operationId: updateGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                description:
+                  type: string
+                  minLength: 1
+                TBNumber:
+                  type: string
+                trekAreas:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                experience:
+                  type: integer
+                  minimum: 0
+                education:
+                  type: string
+                languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+                role:
+                  type: string
+                  enum: [guide, admin]
+      responses:
+        '200':
+          description: Guide updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide updated successfully"
+                  data:
+                    $ref: '#/components/schemas/GuideDetail'
+        '400':
+          description: Validation error or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or TBNumber already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Guides
+      summary: Delete guide
+      description: Delete a guide by ID. Requires authentication.
+      operationId: deleteGuide
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      responses:
+        '200':
+          description: Guide deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Guide deleted successfully"
+        '400':
+          description: Invalid guide ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /trails:
     get:
       tags:
@@ -1388,6 +1689,14 @@ components:
             type: string
           example: ["IFMGA Certified", "Wilderness First Aid", "High Altitude Rescue"]
           description: All certifications
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00.000Z"
 
     TrailListItem:
       type: object
