@@ -1,6 +1,6 @@
-// controllers/app/appGuideController.js
+// controllers/native/nativeGuideController.js
 import Guide from "../../models/guideModel.js";
-import { handleError, ErrorCodes } from "../../utils/appErrors.js";
+import { handleError, ErrorCodes } from "../../utils/nativeErrors.js";
 
 /**
  * Get all guides with pagination and filtering

@@ -1,7 +1,7 @@
-// routes/app/trailInfo.routes.js
+// routes/native/trailInfo.routes.js
 import express from "express";
-import { getTrailInfoByTrailId } from "../../controllers/app/appTrailInfoController.js";
-import { validateParams } from "../../middleware/appValidator.js";
+import { getTrailInfoByTrailId } from "../../controllers/native/nativeTrailInfoController.js";
+import { validateParams } from "../../middleware/nativeValidator.js";
 
 const router = express.Router();
 

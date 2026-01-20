@@ -1,10 +1,10 @@
-// utils/appErrors.example.js
+// utils/nativeErrors.example.js
 /**
- * Example usage of app error handling utilities
+ * Example usage of native error handling utilities
  * This file demonstrates how to use the error handling system in controllers
  */
 
-import { AppError, ErrorCodes, sendErrorResponse, handleError, asyncHandler } from "./appErrors.js";
+import { AppError, ErrorCodes, sendErrorResponse, handleError, asyncHandler } from "./nativeErrors.js";
 
 // ============================================
 // Example 1: Using AppError class

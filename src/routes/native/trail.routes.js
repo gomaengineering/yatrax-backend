@@ -1,7 +1,7 @@
-// routes/app/trail.routes.js
+// routes/native/trail.routes.js
 import express from "express";
-import { getAllTrails, getTrailById } from "../../controllers/app/appTrailController.js";
-import { validateQuery, validateParams } from "../../middleware/appValidator.js";
+import { getAllTrails, getTrailById } from "../../controllers/native/nativeTrailController.js";
+import { validateQuery, validateParams } from "../../middleware/nativeValidator.js";
 
 const router = express.Router();
 

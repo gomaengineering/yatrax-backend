@@ -1,13 +1,13 @@
-// middleware/appAuthMiddleware.js
+// middleware/nativeAuthMiddleware.js
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
 /**
- * App-specific authentication middleware
+ * Native-specific authentication middleware
  * Validates access tokens and attaches authenticated user to request
  * Only works with User model (not Guide)
  */
-export const appProtect = async (req, res, next) => {
+export const nativeProtect = async (req, res, next) => {
   try {
     let token;
 
@@ -71,13 +71,13 @@ export const appProtect = async (req, res, next) => {
         });
       }
 
-      // Verify user role is valid for app access
-      // App supports: user, porter (but not admin - admin uses admin APIs)
+      // Verify user role is valid for native access
+      // Native supports: user, porter (but not admin - admin uses admin APIs)
       const validAppRoles = ["user", "porter"];
       if (!validAppRoles.includes(decoded.role)) {
         return res.status(403).json({
           success: false,
-          message: "Access denied. This endpoint is for app users only.",
+          message: "Access denied. This endpoint is for native users only.",
           error: {
             code: "INVALID_ROLE",
             type: "authorization_error",
@@ -153,7 +153,7 @@ export const appProtect = async (req, res, next) => {
     }
   } catch (error) {
     // Unexpected server error
-    console.error("App auth middleware error:", error);
+    console.error("Native auth middleware error:", error);
     return res.status(500).json({
       success: false,
       message: "Authentication service error. Please try again later.",
@@ -166,11 +166,11 @@ export const appProtect = async (req, res, next) => {
 };
 
 /**
- * Optional app authentication middleware
+ * Optional native authentication middleware
  * Sets req.user if token is valid, but doesn't fail if missing
  * Useful for endpoints that work with or without authentication
  */
-export const appOptionalAuth = async (req, res, next) => {
+export const nativeOptionalAuth = async (req, res, next) => {
   try {
     let token;
 
@@ -201,7 +201,7 @@ export const appOptionalAuth = async (req, res, next) => {
       // Find user (only User model)
       const user = await User.findById(decoded.id).select("-password");
 
-      // Only set user if found and has valid app role
+      // Only set user if found and has valid native role
       if (user && ["user", "porter"].includes(decoded.role) && user.role === decoded.role) {
         req.user = user;
         req.userId = decoded.id;

@@ -1,4 +1,4 @@
-// routes/app/guide.routes.js
+// routes/native/guide.routes.js
 import express from "express";
 import {
   getAllGuides,
@@ -6,9 +6,9 @@ import {
   createGuide,
   updateGuide,
   deleteGuide,
-} from "../../controllers/app/appGuideController.js";
-import { validateQuery, validateParams, validateBody } from "../../middleware/appValidator.js";
-import { appProtect } from "../../middleware/appAuthMiddleware.js";
+} from "../../controllers/native/nativeGuideController.js";
+import { validateQuery, validateParams, validateBody } from "../../middleware/nativeValidator.js";
+import { nativeProtect } from "../../middleware/nativeAuthMiddleware.js";
 
 const router = express.Router();
 
@@ -74,7 +74,7 @@ router.get(
 // Create guide (requires authentication)
 router.post(
   "/",
-  appProtect,
+  nativeProtect,
   validateBody({
     firstName: {
       required: true,
@@ -159,7 +159,7 @@ router.post(
 // Update guide (requires authentication)
 router.put(
   "/:id",
-  appProtect,
+  nativeProtect,
   validateParams({
     id: {
       required: true,
@@ -251,7 +251,7 @@ router.put(
 // Delete guide (requires authentication)
 router.delete(
   "/:id",
-  appProtect,
+  nativeProtect,
   validateParams({
     id: {
       required: true,
