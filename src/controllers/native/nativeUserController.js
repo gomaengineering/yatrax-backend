@@ -1,4 +1,4 @@
-// controllers/app/appUserController.js
+// controllers/native/nativeUserController.js
 import User from "../../models/userModel.js";
 
 /**

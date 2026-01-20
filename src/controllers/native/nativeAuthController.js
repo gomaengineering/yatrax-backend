@@ -1,4 +1,4 @@
-// controllers/app/appAuthController.js
+// controllers/native/nativeAuthController.js
 import User from "../../models/userModel.js";
 import RefreshToken from "../../models/refreshTokenModel.js";
 import {

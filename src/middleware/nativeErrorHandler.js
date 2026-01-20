@@ -1,17 +1,17 @@
-// middleware/appErrorHandler.js
+// middleware/nativeErrorHandler.js
 /**
- * App-specific error handling middleware
- * Catches and formats errors for app API responses
+ * Native-specific error handling middleware
+ * Catches and formats errors for native API responses
  */
 
-import { handleError, ErrorCodes, ErrorTypes } from "../utils/appErrors.js";
+import { handleError, ErrorCodes, ErrorTypes } from "../utils/nativeErrors.js";
 
 /**
  * Native error handler middleware
  * Should be placed after all native routes
  * Only handles errors from /api/native/* routes
  */
-export const appErrorHandler = (err, req, res, next) => {
+export const nativeErrorHandler = (err, req, res, next) => {
   // Only handle errors for native routes
   if (!req.path.startsWith("/api/native")) {
     return next(err);
@@ -25,7 +25,7 @@ export const appErrorHandler = (err, req, res, next) => {
  * 404 handler for native routes
  * Returns standardized 404 response
  */
-export const appNotFoundHandler = (req, res) => {
+export const nativeNotFoundHandler = (req, res) => {
   // Only handle 404s for native routes
   if (!req.path.startsWith("/api/native")) {
     return res.status(404).json({
@@ -47,7 +47,7 @@ export const appNotFoundHandler = (req, res) => {
 };
 
 /**
- * Handle unhandled promise rejections in app routes
+ * Handle unhandled promise rejections in native routes
  * Should be registered at application level
  */
 export const handleUnhandledRejection = (reason, promise) => {
@@ -56,7 +56,7 @@ export const handleUnhandledRejection = (reason, promise) => {
 };
 
 /**
- * Handle uncaught exceptions in app routes
+ * Handle uncaught exceptions in native routes
  * Should be registered at application level
  */
 export const handleUncaughtException = (error) => {

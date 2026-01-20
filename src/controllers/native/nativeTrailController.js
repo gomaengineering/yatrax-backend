@@ -1,7 +1,7 @@
-// controllers/app/appTrailController.js
+// controllers/native/nativeTrailController.js
 import Trail from "../../models/trailModel.js";
 import TrailInfo from "../../models/trailInfoModel.js";
-import { handleError, ErrorCodes } from "../../utils/appErrors.js";
+import { handleError, ErrorCodes } from "../../utils/nativeErrors.js";
 
 /**
  * Simplify geometry for list view
@@ -278,19 +278,21 @@ export const getAllTrails = async (req, res) => {
       const hasTrailInfoFlag = !!trailInfo;
 
       return {
-        id: trail._id.toString(),
-        name: trailInfo?.name || trail.properties?.name || "Unnamed Trail",
-        difficulty: trail.properties?.difficulty || null,
-        activityType: trailInfo?.activityType || null,
-        region: trailInfo?.region || null,
-        country: trailInfo?.country || null,
-        duration_days: trailInfo?.duration_days || null,
-        total_distance_km: trailInfo?.total_distance_km || null,
-        rating_avg: trailInfo?.user_content?.rating_avg || null,
-        rating_count: trailInfo?.user_content?.rating_count || null,
-        image: trailInfo?.image || null,
+        properties: {
+          id: trail._id.toString(),
+          name: trailInfo?.name || trail.properties?.name || "Unnamed Trail",
+          difficulty: trail.properties?.difficulty || null,
+          activityType: trailInfo?.activityType || null,
+          region: trailInfo?.region || null,
+          country: trailInfo?.country || null,
+          duration_days: trailInfo?.duration_days || null,
+          total_distance_km: trailInfo?.total_distance_km || null,
+          rating_avg: trailInfo?.user_content?.rating_avg || null,
+          rating_count: trailInfo?.user_content?.rating_count || null,
+          image: trailInfo?.image || null,
+          hasTrailInfo: hasTrailInfoFlag,
+        },
         geometry: trail.geometry, // Full geometry coordinates
-        hasTrailInfo: hasTrailInfoFlag,
       };
     });
 

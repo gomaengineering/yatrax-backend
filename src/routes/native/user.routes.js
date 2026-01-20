@@ -1,13 +1,13 @@
-// routes/app/user.routes.js
+// routes/native/user.routes.js
 import express from "express";
-import { getProfile, updateProfile } from "../../controllers/app/appUserController.js";
-import { appProtect } from "../../middleware/appAuthMiddleware.js";
-import { validateBody } from "../../middleware/appValidator.js";
+import { getProfile, updateProfile } from "../../controllers/native/nativeUserController.js";
+import { nativeProtect } from "../../middleware/nativeAuthMiddleware.js";
+import { validateBody } from "../../middleware/nativeValidator.js";
 
 const router = express.Router();
 
 // All routes require authentication (rate limiting applied globally in index.js)
-router.use(appProtect);
+router.use(nativeProtect);
 
 // Profile routes
 router.get("/profile", getProfile);

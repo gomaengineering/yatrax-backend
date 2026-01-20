@@ -1,5 +1,5 @@
-// middleware/appRateLimiter.js
-// In-memory rate limiting for app APIs
+// middleware/nativeRateLimiter.js
+// In-memory rate limiting for native APIs
 // Note: For production, consider using express-rate-limit or Redis-based solution
 
 // Store for rate limit data: { key: { count: number, resetTime: number } }
@@ -95,7 +95,7 @@ const createRateLimiter = (options) => {
  * General rate limiter for app APIs
  * Prevents abuse of API endpoints
  */
-export const appRateLimiter = createRateLimiter({
+export const nativeRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per window
   errorCode: "RATE_LIMIT_EXCEEDED",
