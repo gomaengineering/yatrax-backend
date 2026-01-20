@@ -278,6 +278,7 @@ export const getAllTrails = async (req, res) => {
       const hasTrailInfoFlag = !!trailInfo;
 
       return {
+        type: trail.type,
         properties: {
           id: trail._id.toString(),
           name: trailInfo?.name || trail.properties?.name || "Unnamed Trail",
