@@ -87,12 +87,12 @@ paths:
                   example: "Nepal"
                 role:
                   type: string
-                  enum: [user, porter, admin]
-                  default: user
+                  enum: ["user", "porter", "admin"]
+                  default: "user"
                 subscription:
                   type: string
-                  enum: [free, premium]
-                  default: free
+                  enum: ["free", "premium"]
+                  default: "free"
       responses:
         '201':
           description: User registered successfully
@@ -247,12 +247,104 @@ paths:
       tags:
         - Guide Authentication
       summary: Register a new guide
-      description: Create a new guide account with detailed profile information
+      description: |
+        Create a new guide account with detailed profile information.
+        
+        **Photo Upload Options:**
+        - Upload a photo file using `multipart/form-data` with field name `photo`
+        - Or provide a photo URL or base64 string in the request body using `photoUrl` or `photo` field
+        - Photo is optional but recommended
+        - Supported formats: JPEG, JPG, PNG, WEBP
+        - Maximum file size: 5MB
       operationId: registerGuide
       security: []
       requestBody:
         required: true
         content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+                - password
+                - confirmPassword
+                - description
+                - TBNumber
+                - trekAreas
+                - experience
+                - education
+                - languages
+                - ratePerDay
+                - certifications
+              properties:
+                firstName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Sherpa"
+                lastName:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Tenzing"
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                  example: "tenzing@example.com"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                  example: "password123"
+                confirmPassword:
+                  type: string
+                  format: password
+                  example: "password123"
+                description:
+                  type: string
+                  minLength: 1
+                  example: "Experienced mountain guide with 10+ years"
+                TBNumber:
+                  type: string
+                  example: "TB-12345"
+                trekAreas:
+                  type: string
+                  description: JSON string array
+                  example: '["Everest Base Camp", "Annapurna Circuit"]'
+                experience:
+                  type: integer
+                  minimum: 0
+                  example: 10
+                education:
+                  type: string
+                  example: "Mountain Guide Certification"
+                languages:
+                  type: string
+                  description: JSON string array
+                  example: '["English", "Nepali", "Tibetan"]'
+                ratePerDay:
+                  type: number
+                  minimum: 0
+                  example: 5000
+                certifications:
+                  type: string
+                  description: JSON string array
+                  example: '["IFMGA Certified", "Wilderness First Aid"]'
+                role:
+                  type: string
+                  enum: ["guide", "admin"]
+                  default: "guide"
+                photo:
+                  type: string
+                  format: binary
+                  description: Photo file (JPEG, JPG, PNG, WEBP, max 5MB)
+                photoUrl:
+                  type: string
+                  description: Alternative to photo file - provide image URL or base64 string
           application/json:
             schema:
               type: object
@@ -334,8 +426,12 @@ paths:
                   example: ["IFMGA Certified", "Wilderness First Aid"]
                 role:
                   type: string
-                  enum: [guide, admin]
-                  default: guide
+                  enum: ["guide", "admin"]
+                  default: "guide"
+                photoUrl:
+                  type: string
+                  description: Photo URL or base64 string (alternative to file upload)
+                  example: "https://example.com/photo.jpg"
       responses:
         '201':
           description: Guide registered successfully
@@ -647,7 +743,7 @@ paths:
               properties:
                 type:
                   type: string
-                  enum: [FeatureCollection]
+                  enum: ["FeatureCollection"]
                 features:
                   type: array
                   items:
@@ -1115,8 +1211,8 @@ paths:
                   example: ["IFMGA Certified", "Wilderness First Aid", "Avalanche Safety"]
                 role:
                   type: string
-                  enum: [guide, admin]
-                  default: guide
+                  enum: ["guide", "admin"]
+                  default: "guide"
       responses:
         '201':
           description: Guide created successfully
@@ -1220,15 +1316,15 @@ paths:
           in: query
           schema:
             type: string
-            enum: [createdAt, updatedAt, firstName, lastName, experience, ratePerDay]
+            enum: ["createdAt", "updatedAt", "firstName", "lastName", "experience", "ratePerDay"]
             default: createdAt
           description: Field to sort by
         - name: sortOrder
           in: query
           schema:
             type: string
-            enum: [asc, desc]
-            default: desc
+            enum: ["asc", "desc"]
+            default: "desc"
           description: Sort order
       responses:
         '200':
@@ -1379,7 +1475,7 @@ paths:
                   minItems: 1
                 role:
                   type: string
-                  enum: [guide, admin]
+                  enum: ["guide", "admin"]
       responses:
         '200':
           description: Guide updated successfully
@@ -1526,11 +1622,11 @@ components:
           example: "Nepal"
         role:
           type: string
-          enum: [user, porter, admin]
+          enum: ["user", "porter", "admin"]
           example: "user"
         subscription:
           type: string
-          enum: [free, premium]
+          enum: ["free", "premium"]
           example: "free"
 
     Guide:
@@ -1552,7 +1648,7 @@ components:
           example: "tenzing@example.com"
         role:
           type: string
-          enum: [guide, admin]
+          enum: ["guide", "admin"]
           example: "guide"
         description:
           type: string
@@ -1584,14 +1680,20 @@ components:
           items:
             type: string
           example: ["IFMGA Certified", "Wilderness First Aid"]
+        photo:
+          type: string
+          format: uri
+          nullable: true
+          description: Guide profile photo URL (Cloudinary)
+          example: "https://res.cloudinary.com/example/image/upload/v1234567890/guides/photo.jpg"
         createdAt:
           type: string
           format: date-time
-          example: "2024-01-15T10:30:00.000Z"
+          example: "2024-01-01T00:00:00.000Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2024-01-15T10:30:00.000Z"
+          example: "2024-01-01T00:00:00.000Z"
 
     GeoJSONFeature:
       type: object
@@ -1601,7 +1703,7 @@ components:
       properties:
         type:
           type: string
-          enum: [Feature]
+          enum: ["Feature"]
           default: Feature
         geometry:
           $ref: '#/components/schemas/GeoJSONGeometry'
@@ -1621,7 +1723,7 @@ components:
       properties:
         type:
           type: string
-          enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+          enum: ["Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"]
         coordinates:
           oneOf:
             - type: array
@@ -1650,7 +1752,7 @@ components:
       properties:
         type:
           type: string
-          enum: [Polygon]
+          enum: ["Polygon"]
         coordinates:
           type: array
           items:
