@@ -132,24 +132,56 @@ export const getAllTrails = async (req, res) => {
     if (difficulty) query["properties.difficulty"] = parseInt(difficulty);
 
     // Pagination
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 100));
+    const skip = (pageNum - 1) * limitNum;
+
     const trails = await Trail.find(query)
-      .limit(parseInt(limit))
+      .limit(limitNum)
       .skip(skip)
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Populate TrailInfo for all trails
     await Trail.populateTrailInfo(trails);
 
     const total = await Trail.countDocuments(query);
 
+    // Transform trails to match app API response format
+    const transformedTrails = trails.map((trail) => {
+      const trailInfo = trail.trailInfo || null;
+      const hasTrailInfoFlag = !!trailInfo;
+
+      return {
+        properties: {
+          id: trail._id.toString(),
+          name: trailInfo?.name || trail.properties?.name || "Unnamed Trail",
+          difficulty: trail.properties?.difficulty || null,
+          activityType: trailInfo?.activityType || null,
+          region: trailInfo?.region || null,
+          country: trailInfo?.country || null,
+          duration_days: trailInfo?.duration_days || null,
+          total_distance_km: trailInfo?.total_distance_km || null,
+          rating_avg: trailInfo?.user_content?.rating_avg || null,
+          rating_count: trailInfo?.user_content?.rating_count || null,
+          image: trailInfo?.image || null,
+          hasTrailInfo: hasTrailInfoFlag,
+        },
+        geometry: trail.geometry, // Full geometry coordinates
+      };
+    });
+
     res.status(200).json({
       success: true,
-      count: trails.length,
-      total,
-      page: parseInt(page),
-      pages: Math.ceil(total / parseInt(limit)),
-      trails,
+      data: {
+        trails: transformedTrails,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: trails.length,
+          pages: Math.ceil(total / limitNum) || 1,
+        },
+      },
     });
   } catch (error) {
     console.error("Get all trails error:", error);
