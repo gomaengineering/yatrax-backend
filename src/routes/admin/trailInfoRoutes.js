@@ -11,9 +11,9 @@ import { getAllTrailInfo, getFeaturedTrails, getTrailInfoById } from "../../cont
 
 const router = express.Router();
 
-router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
-router.get("/:id", getTrailInfoById);
-router.get("/", getAllTrailInfo);
+router.get("/featured", getFeaturedTrails, protect, adminOnly); // Specific route before parameterized route
+router.get("/:id", getTrailInfoById, protect, adminOnly);
+router.get("/", getAllTrailInfo, protect, adminOnly);
 
 
 // Admin-only Trail Info Management Routes (Create, Update, Delete)

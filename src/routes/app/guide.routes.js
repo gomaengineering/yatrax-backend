@@ -12,7 +12,7 @@ import { appProtect } from "../../middleware/appAuthMiddleware.js";
 
 const router = express.Router();
 
-// Get all guides with pagination and filtering (public)
+// Get all guides with pagination and filtering (public endpoint - no authentication required)
 router.get(
   "/",
   validateQuery({

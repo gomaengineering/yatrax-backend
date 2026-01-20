@@ -165,6 +165,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /auth/user/google-client-id:
+    get:
+      tags:
+        - User Authentication
+      summary: Get Google Client ID
+      description: Retrieve the Google OAuth Client ID for frontend initialization
+      operationId: getGoogleClientId
+      security: []
+      responses:
+        '200':
+          description: Google Client ID retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  clientId:
+                    type: string
+                    description: Google OAuth Client ID
+                    example: "123456789-abcdefghijklmnop.apps.googleusercontent.com"
+        '500':
+          description: Server error or Google Client ID not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /auth/user/google-login:
     post:
       tags:
