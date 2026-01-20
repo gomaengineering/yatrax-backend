@@ -2,6 +2,31 @@ import User from "../../models/userModel.js";
 import generateToken from "../../utils/generateToken.js";
 import { oauth2Client } from "../../utils/googleConfig.js";
 
+// 🔑 GET GOOGLE CLIENT ID (Public endpoint for frontend)
+export const getGoogleClientId = async (req, res) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      return res.status(500).json({
+        success: false,
+        message: "Google Client ID is not configured on the server",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      clientId: clientId,
+    });
+  } catch (error) {
+    console.error("Get Google Client ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 // 🧩 REGISTER USER
 export const registerUser = async (req, res) => {
   try {

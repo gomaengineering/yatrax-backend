@@ -1,5 +1,6 @@
 import Guide from "../../models/guideModel.js";
 import generateToken from "../../utils/generateToken.js";
+import { uploadImage } from "../../utils/cloudinary.js";
 
 //  REGISTER GUIDE
 export const registerGuide = async (req, res) => {
@@ -20,6 +21,30 @@ export const registerGuide = async (req, res) => {
       ratePerDay, 
       certifications 
     } = req.body;
+
+    // Handle photo upload
+    let photoUrl = null;
+    
+    // Check for file upload (multer handles files with any field name)
+    const uploadedFile = req.files && req.files.length > 0 ? req.files[0] : null;
+    
+    if (uploadedFile && uploadedFile.path) {
+      // Image uploaded via multer (file upload)
+      photoUrl = uploadedFile.path; // Cloudinary returns secure_url in path
+    } else if (req.body.photoUrl || req.body.photo) {
+      // Image provided as URL or base64 in body
+      const photoInput = req.body.photoUrl || req.body.photo;
+      try {
+        photoUrl = await uploadImage(photoInput, 'guides');
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to upload photo to Cloudinary',
+          error: error.message,
+        });
+      }
+    }
+    // Photo is optional, so we don't require it
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !description || !TBNumber || 
@@ -44,6 +69,35 @@ export const registerGuide = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Please provide a valid email address",
+      });
+    }
+
+    // Parse JSON strings if they come from FormData
+    // FormData sends nested objects/arrays as JSON strings
+    // If they're already arrays (from JSON request), keep them as is
+    try {
+      if (trekAreas && typeof trekAreas === 'string' && trekAreas.trim()) {
+        trekAreas = JSON.parse(trekAreas);
+      }
+      if (languages && typeof languages === 'string' && languages.trim()) {
+        languages = JSON.parse(languages);
+      }
+      if (certifications && typeof certifications === 'string' && certifications.trim()) {
+        certifications = JSON.parse(certifications);
+      }
+      // Parse numeric values that might come as strings from FormData
+      if (typeof experience === 'string') {
+        experience = parseInt(experience, 10);
+      }
+      if (typeof ratePerDay === 'string') {
+        ratePerDay = parseFloat(ratePerDay);
+      }
+    } catch (parseError) {
+      console.error('Error parsing FormData fields:', parseError);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid JSON format for array or numeric fields',
+        error: parseError.message,
       });
     }
 
@@ -101,7 +155,8 @@ export const registerGuide = async (req, res) => {
       education,
       languages,
       ratePerDay,
-      certifications
+      certifications,
+      photo: photoUrl
     });
 
     // Generate JWT token using the utility function
@@ -125,6 +180,7 @@ export const registerGuide = async (req, res) => {
         languages: newGuide.languages,
         ratePerDay: newGuide.ratePerDay,
         certifications: newGuide.certifications,
+        photo: newGuide.photo,
       },
     });
   } catch (error) {
@@ -188,6 +244,7 @@ export const loginGuide = async (req, res) => {
         languages: guide.languages,
         ratePerDay: guide.ratePerDay,
         certifications: guide.certifications,
+        photo: guide.photo,
       },
     });
   } catch (error) {

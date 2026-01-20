@@ -65,42 +65,6 @@
             font-size: 14px;
         }
 
-        .config-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .config-section h3 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .config-section input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .config-section button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .config-section button:hover {
-            background: #5568d3;
-        }
 
         .google-signin-btn {
             background: #fff;
@@ -604,20 +568,11 @@
         <div class="top-section">
             <div class="container">
                 <h1>🚀 YatraX Backend</h1>
-                <p class="subtitle">Google Sign-In Test Page</p>
+                <p class="subtitle">Google Sign-In</p>
                 
                 <div class="info-box">
-                    <strong>📝 Setup Instructions:</strong><br>
-                    1. Enter your Google Client ID below (from .env file)<br>
-                    2. Make sure your backend is running on port 3000<br>
-                    3. Click "Save Configuration" then try signing in
-                </div>
-
-                <div class="config-section">
-                    <h3>⚙️ Configuration</h3>
-                    <input type="text" id="clientIdInput" placeholder="Enter your Google Client ID" />
-                    <input type="text" id="apiUrlInput" placeholder="API URL (default: http://localhost:3000)" value="http://localhost:3000" />
-                    <button onclick="saveConfig()">Save Configuration</button>
+                    <strong>📝 Instructions:</strong><br>
+                    Click "Sign in with Google" to authenticate using your Google account
                 </div>
 
                 <div id="g_id_onload"
@@ -716,51 +671,40 @@
     <!-- Main Application Script -->
     <script>
         let GOOGLE_CLIENT_ID = '';
-        let API_BASE_URL = 'http://localhost:3000';
+        let API_BASE_URL = 'http://localhost:8000';
         let map = null;
         let geoJsonLayer = null;
         let trailListComponent = null;
         let baseLayers = {};
         let layerControl = null;
 
-        // Load saved configuration from localStorage
-        function loadConfig() {
-            const savedClientId = localStorage.getItem('googleClientId');
-            const savedApiUrl = localStorage.getItem('apiUrl');
-            
-            if (savedClientId) {
-                document.getElementById('clientIdInput').value = savedClientId;
-            }
-            if (savedApiUrl) {
-                document.getElementById('apiUrlInput').value = savedApiUrl;
-                API_BASE_URL = savedApiUrl;
+        // Fetch Google Client ID from backend
+        async function fetchGoogleClientId() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/web/auth/user/google-client-id`);
+                const data = await response.json();
+                
+                if (response.ok && data.success && data.clientId) {
+                    GOOGLE_CLIENT_ID = data.clientId;
+                    initializeGoogleSignIn();
+                } else {
+                    showError('Failed to load Google Client ID. Please check your server configuration.');
+                }
+            } catch (error) {
+                console.error('Error fetching Google Client ID:', error);
+                showError('Unable to connect to server. Please make sure your backend is running.');
             }
         }
 
-        // Save configuration
-        function saveConfig() {
-            GOOGLE_CLIENT_ID = document.getElementById('clientIdInput').value.trim();
-            API_BASE_URL = document.getElementById('apiUrlInput').value.trim() || 'http://localhost:3000';
-
-            if (!GOOGLE_CLIENT_ID) {
-                alert('Please enter your Google Client ID');
-                return;
-            }
-
-            // Save to localStorage
-            localStorage.setItem('googleClientId', GOOGLE_CLIENT_ID);
-            localStorage.setItem('apiUrl', API_BASE_URL);
-
-            // Initialize Google Sign-In
-            initializeGoogleSignIn();
+        // Show error message
+        function showError(message) {
+            const responseDiv = document.getElementById('response');
+            const responseTitle = document.getElementById('responseTitle');
+            const responseContent = document.getElementById('responseContent');
             
-            // Reinitialize trail list component with new API URL
-            if (typeof TrailListComponent !== 'undefined' && map) {
-                trailListComponent = new TrailListComponent(API_BASE_URL, map, displayGeoJSON);
-                trailListComponent.loadTrails();
-            }
-            
-            alert('Configuration saved! You can now sign in with Google.');
+            responseDiv.classList.add('show', 'response-error');
+            responseTitle.textContent = '❌ Error';
+            responseContent.textContent = message;
         }
 
         // Initialize Google Sign-In
@@ -798,10 +742,14 @@
         // Trigger Google Sign-In
         function triggerGoogleSignIn() {
             if (!GOOGLE_CLIENT_ID) {
-                alert('Please configure your Google Client ID first');
+                showError('Google Client ID not loaded. Please refresh the page.');
                 return;
             }
-            google.accounts.id.prompt();
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.prompt();
+            } else {
+                showError('Google Sign-In library not loaded. Please refresh the page.');
+            }
         }
 
         // Handle the credential response from Google
@@ -818,7 +766,7 @@
 
             try {
                 // Send the ID token to your backend
-                const backendResponse = await fetch(`${API_BASE_URL}/api/auth/user/google-login`, {
+                const backendResponse = await fetch(`${API_BASE_URL}/api/web/auth/user/google-login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1207,7 +1155,6 @@
 
         // Initialize on page load
         window.onload = function() {
-            loadConfig();
             initializeMap();
             
             // Initialize Trail List Component
@@ -1216,13 +1163,11 @@
                 trailListComponent.loadTrails();
             }
             
-            // Wait for Google API to load
+            // Wait for Google API to load, then fetch Client ID
             const checkGoogle = setInterval(() => {
                 if (typeof google !== 'undefined' && google.accounts) {
                     clearInterval(checkGoogle);
-                    if (GOOGLE_CLIENT_ID) {
-                        initializeGoogleSignIn();
-                    }
+                    fetchGoogleClientId();
                 }
             }, 100);
         };

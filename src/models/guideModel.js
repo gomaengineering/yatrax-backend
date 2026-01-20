@@ -73,6 +73,11 @@ const guideSchema = new mongoose.Schema(
       required: true,
       default: [],
     },
+    photo: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );
