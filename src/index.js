@@ -20,14 +20,14 @@ import adminTrailRoutes from './routes/admin/adminTrailRoutes.js';
 import adminStatsRoutes from './routes/admin/adminStatsRoutes.js';
 import adminTrailInfoRoutes from './routes/admin/trailInfoRoutes.js';
 
-// App Routes
-import appAuthRoutes from './routes/app/auth.routes.js';
-import appUserRoutes from './routes/app/user.routes.js';
-import appGuideRoutes from './routes/app/guide.routes.js';
-import appTrailRoutes from './routes/app/trail.routes.js';
-import appTrailInfoRoutes from './routes/app/trailInfo.routes.js';
-import { appRateLimiter } from './middleware/appRateLimiter.js';
-import { appErrorHandler } from './middleware/appErrorHandler.js';
+// Native Routes
+import nativeAuthRoutes from './routes/native/auth.routes.js';
+import nativeUserRoutes from './routes/native/user.routes.js';
+import nativeGuideRoutes from './routes/native/guide.routes.js';
+import nativeTrailRoutes from './routes/native/trail.routes.js';
+import nativeTrailInfoRoutes from './routes/native/trailInfo.routes.js';
+import { nativeRateLimiter } from './middleware/nativeRateLimiter.js';
+import { nativeErrorHandler } from './middleware/nativeErrorHandler.js';
 
 dotenv.config();
 
@@ -85,20 +85,20 @@ app.use("/api/admin/trails", adminTrailRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
 
 // Native API Routes - Apply global rate limiting to all native routes
-app.use("/api/native", appRateLimiter);
-app.use("/api/native/auth", appAuthRoutes);
+app.use("/api/native", nativeRateLimiter);
+app.use("/api/native/auth", nativeAuthRoutes);
 // Mount public routes (trails and guides) before user routes to ensure they're not caught by user route middleware
-app.use("/api/native/trails", appTrailInfoRoutes);
-app.use("/api/native/trails", appTrailRoutes);
-app.use("/api/native/guides", appGuideRoutes);
-app.use("/api/native", appUserRoutes);
+app.use("/api/native/trails", nativeTrailInfoRoutes);
+app.use("/api/native/trails", nativeTrailRoutes);
+app.use("/api/native/guides", nativeGuideRoutes);
+app.use("/api/native", nativeUserRoutes);
 
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
   if (error.type === 'entity.too.large' || error.name === 'PayloadTooLargeError') {
     // Use app error handler for app routes, otherwise use default
     if (req.path.startsWith("/api/native")) {
-      return appErrorHandler(error, req, res, next);
+      return nativeErrorHandler(error, req, res, next);
     }
     return res.status(413).json({
       success: false,
@@ -108,8 +108,8 @@ app.use((error, req, res, next) => {
   next(error);
 });
 
-// App-specific error handler (must be before global handler)
-app.use(appErrorHandler);
+// Native-specific error handler (must be before global handler)
+app.use(nativeErrorHandler);
 
 // Global error handler (for non-app routes)
 app.use((error, req, res, next) => {

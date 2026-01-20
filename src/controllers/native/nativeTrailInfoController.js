@@ -1,7 +1,7 @@
-// controllers/app/appTrailInfoController.js
+// controllers/native/nativeTrailInfoController.js
 import TrailInfo from "../../models/trailInfoModel.js";
 import Trail from "../../models/trailModel.js";
-import { handleError, ErrorCodes } from "../../utils/appErrors.js";
+import { handleError, ErrorCodes } from "../../utils/nativeErrors.js";
 
 /**
  * Get TrailInfo for a specific trail

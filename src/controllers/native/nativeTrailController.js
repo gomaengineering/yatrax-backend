@@ -1,7 +1,7 @@
-// controllers/app/appTrailController.js
+// controllers/native/nativeTrailController.js
 import Trail from "../../models/trailModel.js";
 import TrailInfo from "../../models/trailInfoModel.js";
-import { handleError, ErrorCodes } from "../../utils/appErrors.js";
+import { handleError, ErrorCodes } from "../../utils/nativeErrors.js";
 
 /**
  * Simplify geometry for list view

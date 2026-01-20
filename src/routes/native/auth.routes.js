@@ -1,9 +1,9 @@
-// routes/app/auth.routes.js
+// routes/native/auth.routes.js
 import express from "express";
-import { loginUser, refreshToken, logout } from "../../controllers/app/appAuthController.js";
+import { loginUser, refreshToken, logout } from "../../controllers/native/nativeAuthController.js";
 import { optionalAuth } from "../../middleware/authMiddleware.js";
-import { authRateLimiter, refreshTokenRateLimiter, appRateLimiter } from "../../middleware/appRateLimiter.js";
-import { validateBody } from "../../middleware/appValidator.js";
+import { authRateLimiter, refreshTokenRateLimiter, nativeRateLimiter } from "../../middleware/nativeRateLimiter.js";
+import { validateBody } from "../../middleware/nativeValidator.js";
 
 const router = express.Router();
 
@@ -67,7 +67,7 @@ router.post(
 // Logout route with rate limiting and validation
 router.post(
   "/logout",
-  appRateLimiter,
+  nativeRateLimiter,
   validateBody({
     refreshToken: {
       required: false,

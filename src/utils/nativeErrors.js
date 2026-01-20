@@ -1,11 +1,11 @@
-// utils/appErrors.js
+// utils/nativeErrors.js
 /**
- * App-specific error handling utilities
+ * Native-specific error handling utilities
  * Provides standardized error codes, messages, and response format
  */
 
 /**
- * Error code constants for app APIs
+ * Error code constants for native APIs
  */
 export const ErrorCodes = {
   // Authentication errors
@@ -158,12 +158,12 @@ export const ErrorStatusCodes = {
 };
 
 /**
- * Custom AppError class for app-specific errors
+ * Custom NativeError class for native-specific errors
  */
 export class AppError extends Error {
   constructor(code, message = null, details = null, statusCode = null) {
     super(message || ErrorMessages[code] || "An error occurred");
-    this.name = "AppError";
+    this.name = "NativeError";
     this.code = code;
     this.message = message || ErrorMessages[code] || "An error occurred";
     this.details = details;

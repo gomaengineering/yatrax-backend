@@ -1,9 +1,9 @@
-// middleware/appValidator.js
+// middleware/nativeValidator.js
 
 /**
- * App-specific request validation middleware
+ * Native-specific request validation middleware
  * Validates body, params, and query parameters
- * Returns consistent app error format
+ * Returns consistent native error format
  */
 
 /**
