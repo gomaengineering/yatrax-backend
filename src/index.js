@@ -87,11 +87,11 @@ app.use("/api/admin/stats", adminStatsRoutes);
 // App API Routes - Apply global rate limiting to all app routes
 app.use("/api/v1/app", appRateLimiter);
 app.use("/api/v1/app/auth", appAuthRoutes);
-// Mount trail routes before user routes to ensure they're not caught by user route middleware
+// Mount public routes (trails and guides) before user routes to ensure they're not caught by user route middleware
 app.use("/api/v1/app/trails", appTrailInfoRoutes);
 app.use("/api/v1/app/trails", appTrailRoutes);
-app.use("/api/v1/app", appUserRoutes);
 app.use("/api/v1/app/guides", appGuideRoutes);
+app.use("/api/v1/app", appUserRoutes);
 
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
