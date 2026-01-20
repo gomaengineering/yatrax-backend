@@ -3,7 +3,7 @@ import User from "../../models/userModel.js";
 
 /**
  * Get current user's profile
- * GET /api/v1/app/profile
+ * GET /api/native/profile
  */
 export const getProfile = async (req, res) => {
   try {
@@ -62,7 +62,7 @@ export const getProfile = async (req, res) => {
 
 /**
  * Update current user's profile
- * PUT /api/v1/app/profile
+ * PUT /api/native/profile
  */
 export const updateProfile = async (req, res) => {
   try {

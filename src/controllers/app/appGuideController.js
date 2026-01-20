@@ -4,7 +4,7 @@ import { handleError, ErrorCodes } from "../../utils/appErrors.js";
 
 /**
  * Get all guides with pagination and filtering
- * GET /api/v1/app/guides
+ * GET /api/native/guides
  */
 export const getAllGuides = async (req, res) => {
   try {
@@ -137,7 +137,7 @@ export const getAllGuides = async (req, res) => {
 
 /**
  * Get guide by ID (detailed view)
- * GET /api/v1/app/guides/:id
+ * GET /api/native/guides/:id
  */
 export const getGuideById = async (req, res) => {
   try {
@@ -198,7 +198,7 @@ export const getGuideById = async (req, res) => {
 
 /**
  * Create a new guide
- * POST /api/v1/app/guides
+ * POST /api/native/guides
  */
 export const createGuide = async (req, res) => {
   try {
@@ -388,7 +388,7 @@ export const createGuide = async (req, res) => {
 
 /**
  * Update guide by ID
- * PUT /api/v1/app/guides/:id
+ * PUT /api/native/guides/:id
  */
 export const updateGuide = async (req, res) => {
   try {
@@ -614,7 +614,7 @@ export const updateGuide = async (req, res) => {
 
 /**
  * Delete guide by ID
- * DELETE /api/v1/app/guides/:id
+ * DELETE /api/native/guides/:id
  */
 export const deleteGuide = async (req, res) => {
   try {

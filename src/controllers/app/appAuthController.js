@@ -11,7 +11,7 @@ import {
 
 /**
  * Login user and generate access + refresh tokens
- * POST /api/v1/app/auth/login
+ * POST /api/native/auth/login
  */
 export const loginUser = async (req, res) => {
   try {
@@ -110,7 +110,7 @@ export const loginUser = async (req, res) => {
 
 /**
  * Refresh access token using refresh token
- * POST /api/v1/app/auth/refresh
+ * POST /api/native/auth/refresh
  */
 export const refreshToken = async (req, res) => {
   try {
@@ -216,7 +216,7 @@ export const refreshToken = async (req, res) => {
 
 /**
  * Logout user and revoke refresh token(s)
- * POST /api/v1/app/auth/logout
+ * POST /api/native/auth/logout
  * Can work with:
  *   - Refresh token in body (logout specific device, no auth required)
  *   - Access token in header (logout all devices, requires auth via protect middleware)

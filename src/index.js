@@ -57,8 +57,8 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.get('/api-docs/app', (req, res) => {
-    res.sendFile(path.join(__dirname, '../docs/app-api-swagger.html'));
+app.get('/api-docs/native', (req, res) => {
+    res.sendFile(path.join(__dirname, '../docs/native-api-swagger.html'));
 });
 
 app.get('/api-docs/web', (req, res) => {
@@ -84,20 +84,20 @@ app.use("/api/admin/guides", adminGuideRoutes);
 app.use("/api/admin/trails", adminTrailRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
 
-// App API Routes - Apply global rate limiting to all app routes
-app.use("/api/v1/app", appRateLimiter);
-app.use("/api/v1/app/auth", appAuthRoutes);
+// Native API Routes - Apply global rate limiting to all native routes
+app.use("/api/native", appRateLimiter);
+app.use("/api/native/auth", appAuthRoutes);
 // Mount public routes (trails and guides) before user routes to ensure they're not caught by user route middleware
-app.use("/api/v1/app/trails", appTrailInfoRoutes);
-app.use("/api/v1/app/trails", appTrailRoutes);
-app.use("/api/v1/app/guides", appGuideRoutes);
-app.use("/api/v1/app", appUserRoutes);
+app.use("/api/native/trails", appTrailInfoRoutes);
+app.use("/api/native/trails", appTrailRoutes);
+app.use("/api/native/guides", appGuideRoutes);
+app.use("/api/native", appUserRoutes);
 
 // Error handler for body parser errors (e.g., PayloadTooLargeError)
 app.use((error, req, res, next) => {
   if (error.type === 'entity.too.large' || error.name === 'PayloadTooLargeError') {
     // Use app error handler for app routes, otherwise use default
-    if (req.path.startsWith("/api/v1/app")) {
+    if (req.path.startsWith("/api/native")) {
       return appErrorHandler(error, req, res, next);
     }
     return res.status(413).json({
