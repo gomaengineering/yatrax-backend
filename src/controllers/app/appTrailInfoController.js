@@ -5,7 +5,7 @@ import { handleError, ErrorCodes } from "../../utils/appErrors.js";
 
 /**
  * Get TrailInfo for a specific trail
- * GET /api/v1/app/trails/:trailId/info
+ * GET /api/native/trails/:trailId/info
  */
 export const getTrailInfoByTrailId = async (req, res) => {
   try {

@@ -7,13 +7,13 @@
 import { handleError, ErrorCodes, ErrorTypes } from "../utils/appErrors.js";
 
 /**
- * App error handler middleware
- * Should be placed after all app routes
- * Only handles errors from /api/v1/app/* routes
+ * Native error handler middleware
+ * Should be placed after all native routes
+ * Only handles errors from /api/native/* routes
  */
 export const appErrorHandler = (err, req, res, next) => {
-  // Only handle errors for app routes
-  if (!req.path.startsWith("/api/v1/app")) {
+  // Only handle errors for native routes
+  if (!req.path.startsWith("/api/native")) {
     return next(err);
   }
 
@@ -22,12 +22,12 @@ export const appErrorHandler = (err, req, res, next) => {
 };
 
 /**
- * 404 handler for app routes
+ * 404 handler for native routes
  * Returns standardized 404 response
  */
 export const appNotFoundHandler = (req, res) => {
-  // Only handle 404s for app routes
-  if (!req.path.startsWith("/api/v1/app")) {
+  // Only handle 404s for native routes
+  if (!req.path.startsWith("/api/native")) {
     return res.status(404).json({
       success: false,
       message: "Route not found",

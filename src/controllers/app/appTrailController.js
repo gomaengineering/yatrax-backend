@@ -132,7 +132,7 @@ const simplifyGeometry = (geometry) => {
 
 /**
  * Get all trails with pagination and filtering
- * GET /api/v1/app/trails
+ * GET /api/native/trails
  */
 export const getAllTrails = async (req, res) => {
   try {
@@ -324,7 +324,7 @@ export const getAllTrails = async (req, res) => {
 
 /**
  * Get trail by ID (detailed view)
- * GET /api/v1/app/trails/:id
+ * GET /api/native/trails/:id
  */
 export const getTrailById = async (req, res) => {
   try {
