@@ -5,7 +5,7 @@ import { uploadImage } from "../../utils/cloudinary.js";
 //  REGISTER GUIDE
 export const registerGuide = async (req, res) => {
   try {
-    const { 
+    let { 
       firstName, 
       lastName, 
       email, 
