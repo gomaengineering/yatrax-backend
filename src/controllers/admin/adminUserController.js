@@ -204,13 +204,14 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Create user
+    // Create user with local authentication
     const newUser = await User.create({
       firstName,
       lastName,
       email: email.toLowerCase(),
       password,
       country,
+      authProvider: "local", // Explicitly set for email/password registration
       role: role || "user",
       subscription: subscription || "free",
     });
