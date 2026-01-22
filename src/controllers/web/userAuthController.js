@@ -50,13 +50,14 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "Passwords do not match" });
     }
 
-    // Create user
+    // Create user with local authentication
     const newUser = await User.create({ 
       firstName, 
       lastName, 
       email: email.toLowerCase(), 
       password, 
       country,
+      authProvider: "local", // Explicitly set for email/password registration
       role: role || "user",
       subscription: subscription || "free"
     });
@@ -110,6 +111,14 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
     if (!user) {
       return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
+
+    // Check if user is OAuth-only (no password set)
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "This account was created with Google. Please use Google Sign-In to login." 
+      });
     }
 
     // Compare passwords
@@ -178,8 +187,8 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    let user = await User.findOne({ email: email.toLowerCase() });
+    // Check if user exists (include password field to check if they have one)
+    let user = await User.findOne({ email: email.toLowerCase() }).select("+password");
 
     // If user doesn't exist, create a new one
     if (!user) {
@@ -187,18 +196,30 @@ export const googleLogin = async (req, res) => {
       const firstName = given_name || name?.split(' ')[0] || "Google";
       const lastName = family_name || name?.split(' ').slice(1).join(' ') || "User";
       
-      // Generate temporary password for Google OAuth users
-      const tempPassword = `google_${Math.random().toString(36).slice(-12)}`;
-      
+      // Create user without password (OAuth users don't need passwords)
       user = await User.create({
         firstName: firstName,
         lastName: lastName,
         email: email.toLowerCase(),
-        password: tempPassword, // Will be hashed by pre-save hook
+        // No password for OAuth users - password field is optional when authProvider is 'google'
+        authProvider: "google",
         // country is optional - not provided by Google OAuth
         role: "user",
         subscription: "free",
       });
+    } else {
+      // If user exists:
+      // - If they have a password, they registered with email/password, so keep authProvider as 'local'
+      //   (they can use both methods - email/password and Google)
+      // - If they don't have a password, they're OAuth-only, so set/update authProvider to 'google'
+      if (!user.password) {
+        // User has no password, so they're OAuth-only
+        if (!user.authProvider || user.authProvider !== 'google') {
+          user.authProvider = 'google';
+          await user.save();
+        }
+      }
+      // If user has password, don't change their authProvider (they can use both methods)
     }
 
     // Generate JWT token
