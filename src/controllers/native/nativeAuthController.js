@@ -43,6 +43,14 @@ export const loginUser = async (req, res) => {
       });
     }
 
+    // Check if user is OAuth-only (no password set)
+    if (user.authProvider === 'google' && !user.password) {
+      return res.status(401).json({
+        success: false,
+        message: "This account was created with Google. Please use Google Sign-In to login.",
+      });
+    }
+
     // Verify password
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {

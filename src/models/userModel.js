@@ -28,9 +28,17 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function() {
+        // Password is only required if authProvider is not 'google'
+        return this.authProvider !== 'google';
+      },
       minlength: [8, "Password must be at least 8 characters long"],
       select: false, // hides password by default
+    },
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
     },
     role: {
       type: String,
@@ -47,9 +55,10 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
+// Hash password before saving (only if password exists and is modified)
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  // Skip password hashing if password is not modified or doesn't exist (OAuth users)
+  if (!this.isModified("password") || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -62,6 +71,10 @@ userSchema.pre("save", async function (next) {
 
 // Compare entered password with hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  // If user has no password (OAuth user), return false
+  if (!this.password) {
+    return false;
+  }
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
