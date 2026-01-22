@@ -2,16 +2,18 @@ openapi: 3.0.3
 info:
   title: YatraX Admin API
   description: |
-    RESTful API for YatraX admin panel.
+    RESTful API for YatraX admin panel. All endpoints require admin authentication except the login endpoint.
     
     ## Authentication
-    All admin endpoints require JWT token authentication with admin role.
+    The API uses JWT token-based authentication.
     - Tokens expire in 7 days (default)
     - Include token in Authorization header: `Bearer <token>`
-    - Admin accounts can exist in both User and Guide models
+    - All endpoints (except `/auth/login`) require admin role
     
-    ## Authorization
-    All endpoints require admin role. Use `/api/admin/auth/login` to authenticate.
+    ## Admin Access
+    - Only users with `role: "admin"` can access these endpoints
+    - Admin can be from either User model or Guide model
+    - Login endpoint accepts `userType` parameter to specify which model to check
   version: 1.0.0
   contact:
     name: YatraX API Support
@@ -27,13 +29,13 @@ tags:
   - name: Admin Authentication
     description: Admin login and profile management
   - name: User Management
-    description: CRUD operations for users
+    description: CRUD operations for user accounts
   - name: Guide Management
-    description: CRUD operations for guides
+    description: CRUD operations for guide accounts
   - name: Trail Management
-    description: CRUD operations for trails
+    description: CRUD operations for trail GeoJSON data
   - name: Trail Info Management
-    description: CRUD operations for trail information
+    description: CRUD operations for trail information and metadata
   - name: Statistics
     description: Dashboard statistics and analytics
 
@@ -43,7 +45,9 @@ paths:
       tags:
         - Admin Authentication
       summary: Admin login
-      description: Login as admin. Supports admin accounts from both User and Guide models.
+      description: |
+        Authenticate admin with email and password. Admin can be from User model or Guide model.
+        Use `userType` parameter to specify which model to check first.
       operationId: loginAdmin
       security: []
       requestBody:
@@ -59,30 +63,47 @@ paths:
                 email:
                   type: string
                   format: email
-                  example: "admin@example.com"
+                  maxLength: 255
+                  example: "admin@yatrax.com"
+                  description: Admin email address
                 password:
                   type: string
                   format: password
-                  example: "password123"
+                  minLength: 8
+                  maxLength: 128
+                  example: "admin123"
+                  description: Admin password
                 userType:
                   type: string
-                  enum: [user, guide]
-                  description: Optional - specify "user" or "guide" (default: tries both)
+                  enum: ["user", "guide"]
+                  example: "user"
+                  description: |
+                    Optional. Specify which model to check first.
+                    - "user": Check User model first, then Guide model
+                    - "guide": Check Guide model first, then User model
+                    If not provided, defaults to checking User model first
       responses:
         '200':
-          description: Admin login successful
+          description: Login successful
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AdminAuthResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Admin login successful"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    description: JWT access token
+                  admin:
+                    $ref: '#/components/schemas/AdminProfile'
         '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Invalid credentials or not an admin
+          description: Invalid credentials or validation error
           content:
             application/json:
               schema:
@@ -102,7 +123,7 @@ paths:
       description: Get the authenticated admin's profile information
       operationId: getAdminProfile
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: Profile retrieved successfully
@@ -113,18 +134,23 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   admin:
-                    oneOf:
-                      - $ref: '#/components/schemas/User'
-                      - $ref: '#/components/schemas/Guide'
+                    $ref: '#/components/schemas/AdminProfile'
         '401':
-          description: Unauthorized
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden - Admin role required
+          description: Not an admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Admin not found
           content:
             application/json:
               schema:
@@ -141,10 +167,10 @@ paths:
       tags:
         - User Management
       summary: Get all users
-      description: Get all users sorted by creation date (newest first). No pagination.
+      description: Retrieve a list of all users in the system
       operationId: getAllUsers
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: Users retrieved successfully
@@ -155,20 +181,22 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   count:
                     type: integer
+                    example: 150
                   users:
                     type: array
                     items:
                       $ref: '#/components/schemas/User'
         '401':
-          description: Unauthorized
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -183,11 +211,11 @@ paths:
     post:
       tags:
         - User Management
-      summary: Create user
+      summary: Create a new user
       description: Create a new user account (admin only)
       operationId: createUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -204,27 +232,37 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 50
+                  example: "John"
                 lastName:
                   type: string
                   minLength: 1
                   maxLength: 50
+                  example: "Doe"
                 email:
                   type: string
                   format: email
+                  maxLength: 255
+                  example: "user@example.com"
                 password:
                   type: string
                   format: password
                   minLength: 8
+                  maxLength: 128
+                  example: "password123"
                 country:
                   type: string
+                  maxLength: 100
+                  example: "Nepal"
                 role:
                   type: string
-                  enum: [user, porter, admin]
-                  default: user
+                  enum: ["user", "porter", "admin"]
+                  default: "user"
+                  example: "user"
                 subscription:
                   type: string
-                  enum: [free, premium]
-                  default: free
+                  enum: ["free", "premium"]
+                  default: "free"
+                  example: "free"
       responses:
         '201':
           description: User created successfully
@@ -235,18 +273,30 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "User created successfully"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    description: JWT token for the created user
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: '#/components/schemas/UserBasic'
         '400':
-          description: Validation error
+          description: Validation error or email already exists
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: User already exists
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -263,10 +313,10 @@ paths:
       tags:
         - User Management
       summary: Get user by ID
-      description: Get a specific user by ID
+      description: Retrieve a specific user by their ID
       operationId: getUserById
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -274,6 +324,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the user
       responses:
         '200':
           description: User retrieved successfully
@@ -284,8 +336,27 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   user:
                     $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: User not found
           content:
@@ -303,10 +374,10 @@ paths:
       tags:
         - User Management
       summary: Update user
-      description: Update an existing user. All fields are optional.
+      description: Update an existing user's information
       operationId: updateUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -314,6 +385,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the user
       requestBody:
         required: true
         content:
@@ -323,22 +396,31 @@ paths:
               properties:
                 firstName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "John"
                 lastName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Doe"
                 email:
                   type: string
                   format: email
-                password:
-                  type: string
-                  format: password
+                  maxLength: 255
+                  example: "user@example.com"
                 country:
                   type: string
+                  maxLength: 100
+                  example: "Nepal"
                 role:
                   type: string
-                  enum: [user, porter, admin]
+                  enum: ["user", "porter", "admin"]
+                  example: "user"
                 subscription:
                   type: string
-                  enum: [free, premium]
+                  enum: ["free", "premium"]
+                  example: "premium"
       responses:
         '200':
           description: User updated successfully
@@ -349,12 +431,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "User updated successfully"
                   user:
                     $ref: '#/components/schemas/User'
         '400':
-          description: Validation error
+          description: Validation error or email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -376,10 +472,10 @@ paths:
       tags:
         - User Management
       summary: Delete user
-      description: Delete a user by ID. Cannot delete your own admin account.
+      description: Delete a user account. Cannot delete your own admin account.
       operationId: deleteUser
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -387,6 +483,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the user
       responses:
         '200':
           description: User deleted successfully
@@ -397,10 +495,24 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "User deleted successfully"
         '400':
-          description: Cannot delete own account
+          description: Cannot delete your own admin account or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -423,10 +535,10 @@ paths:
       tags:
         - Guide Management
       summary: Get all guides
-      description: Get all guides without pagination or filtering
+      description: Retrieve a list of all guides in the system
       operationId: getAllGuides
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: Guides retrieved successfully
@@ -437,20 +549,22 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   count:
                     type: integer
+                    example: 50
                   guides:
                     type: array
                     items:
                       $ref: '#/components/schemas/Guide'
         '401':
-          description: Unauthorized
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -465,11 +579,11 @@ paths:
     post:
       tags:
         - Guide Management
-      summary: Create guide
+      summary: Create a new guide
       description: Create a new guide account (admin only)
       operationId: createGuide
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -492,46 +606,71 @@ paths:
               properties:
                 firstName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Ram"
                 lastName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Shrestha"
                 email:
                   type: string
                   format: email
+                  maxLength: 255
+                  example: "guide@example.com"
                 password:
                   type: string
                   format: password
                   minLength: 8
+                  maxLength: 128
+                  example: "password123"
                 description:
                   type: string
+                  minLength: 1
+                  example: "Experienced trekking guide with 10 years of experience"
                 TBNumber:
                   type: string
+                  minLength: 1
+                  example: "TB-12345"
+                  description: Trekking Board Number (unique)
                 trekAreas:
                   type: array
+                  minItems: 1
                   items:
                     type: string
-                  minItems: 1
+                  example: ["Everest Base Camp", "Annapurna Circuit", "Langtang"]
                 experience:
                   type: integer
                   minimum: 0
+                  example: 10
+                  description: Years of experience
                 education:
                   type: string
+                  minLength: 1
+                  example: "Bachelor's in Tourism"
                 languages:
                   type: array
+                  minItems: 1
                   items:
                     type: string
-                  minItems: 1
+                  example: ["English", "Nepali", "Hindi"]
                 ratePerDay:
                   type: number
                   minimum: 0
+                  example: 50
+                  description: Rate per day in USD
                 certifications:
                   type: array
+                  minItems: 1
                   items:
                     type: string
-                  minItems: 1
+                  example: ["Wilderness First Aid", "Mountain Guide Certification"]
                 role:
                   type: string
-                  enum: [guide, admin]
-                  default: guide
+                  enum: ["guide", "admin"]
+                  default: "guide"
+                  example: "guide"
       responses:
         '201':
           description: Guide created successfully
@@ -542,18 +681,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Guide created successfully"
                   guide:
-                    $ref: '#/components/schemas/Guide'
+                    $ref: '#/components/schemas/GuideBasic'
         '400':
-          description: Validation error
+          description: Validation error, email already exists, or TBNumber already in use
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Guide already exists
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -570,10 +717,10 @@ paths:
       tags:
         - Guide Management
       summary: Get guide by ID
-      description: Get a specific guide by ID
+      description: Retrieve a specific guide by their ID
       operationId: getGuideById
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -581,6 +728,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the guide
       responses:
         '200':
           description: Guide retrieved successfully
@@ -591,8 +740,27 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   guide:
                     $ref: '#/components/schemas/Guide'
+        '400':
+          description: Invalid guide ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Guide not found
           content:
@@ -610,10 +778,10 @@ paths:
       tags:
         - Guide Management
       summary: Update guide
-      description: Update an existing guide. All fields are optional.
+      description: Update an existing guide's information
       operationId: updateGuide
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -621,6 +789,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the guide
       requestBody:
         required: true
         content:
@@ -630,39 +800,55 @@ paths:
               properties:
                 firstName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Ram"
                 lastName:
                   type: string
+                  minLength: 1
+                  maxLength: 50
+                  example: "Shrestha"
                 email:
                   type: string
                   format: email
-                password:
-                  type: string
-                  format: password
+                  maxLength: 255
+                  example: "guide@example.com"
                 description:
                   type: string
+                  example: "Experienced trekking guide"
                 TBNumber:
                   type: string
+                  example: "TB-12345"
                 trekAreas:
                   type: array
                   items:
                     type: string
+                  example: ["Everest Base Camp", "Annapurna Circuit"]
                 experience:
                   type: integer
+                  minimum: 0
+                  example: 10
                 education:
                   type: string
+                  example: "Bachelor's in Tourism"
                 languages:
                   type: array
                   items:
                     type: string
+                  example: ["English", "Nepali"]
                 ratePerDay:
                   type: number
+                  minimum: 0
+                  example: 50
                 certifications:
                   type: array
                   items:
                     type: string
+                  example: ["Wilderness First Aid"]
                 role:
                   type: string
-                  enum: [guide, admin]
+                  enum: ["guide", "admin"]
+                  example: "guide"
       responses:
         '200':
           description: Guide updated successfully
@@ -673,12 +859,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Guide updated successfully"
                   guide:
                     $ref: '#/components/schemas/Guide'
         '400':
-          description: Validation error
+          description: Validation error or email already in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -700,10 +900,10 @@ paths:
       tags:
         - Guide Management
       summary: Delete guide
-      description: Delete a guide by ID. Cannot delete your own admin account.
+      description: Delete a guide account. Cannot delete your own admin account.
       operationId: deleteGuide
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -711,6 +911,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the guide
       responses:
         '200':
           description: Guide deleted successfully
@@ -721,10 +923,24 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Guide deleted successfully"
         '400':
-          description: Cannot delete own account
+          description: Cannot delete your own admin account or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -747,10 +963,12 @@ paths:
       tags:
         - Trail Management
       summary: Get all trails
-      description: Get all trails with admin-specific filters and pagination
+      description: |
+        Retrieve a list of all trails with optional filtering and pagination.
+        Supports filtering by fid, id, name, difficulty, and search query.
       operationId: getAllTrails
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: page
           in: query
@@ -758,40 +976,63 @@ paths:
             type: integer
             minimum: 1
             default: 1
+          example: 1
+          description: Page number for pagination
         - name: limit
           in: query
           schema:
             type: integer
             minimum: 1
-            default: 100
-        - name: isActive
+            maximum: 100
+            default: 10
+          example: 10
+          description: Number of items per page
+        - name: fid
           in: query
           schema:
-            type: boolean
-        - name: guideId
+            type: integer
+          example: 123
+          description: Filter by properties.fid
+        - name: id
+          in: query
+          schema:
+            type: integer
+          example: 456
+          description: Filter by properties.id
+        - name: name
           in: query
           schema:
             type: string
+          example: "Everest"
+          description: Filter by trail name (case-insensitive partial match)
         - name: difficulty
           in: query
           schema:
             type: integer
+          example: 3
+          description: Filter by difficulty level
         - name: search
           in: query
           schema:
             type: string
+          example: "base camp"
+          description: Search in name and description (case-insensitive)
         - name: sortBy
           in: query
           schema:
             type: string
-            enum: [createdAt, name, difficulty]
-            default: createdAt
+            enum: ["createdAt", "updatedAt", "properties.name", "properties.difficulty"]
+            default: "createdAt"
+          example: "createdAt"
+          description: Field to sort by
         - name: sortOrder
           in: query
           schema:
             type: string
-            enum: [asc, desc]
-            default: desc
+            enum: ["asc", "desc"]
+            default: "desc"
+          example: "desc"
+          description: Sort order
       responses:
         '200':
           description: Trails retrieved successfully
@@ -802,20 +1043,31 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   count:
                     type: integer
+                    example: 10
+                  total:
+                    type: integer
+                    example: 150
+                  page:
+                    type: integer
+                    example: 1
+                  pages:
+                    type: integer
+                    example: 15
                   trails:
                     type: array
                     items:
-                      $ref: '#/components/schemas/GeoJSONFeature'
+                      $ref: '#/components/schemas/Trail'
         '401':
-          description: Unauthorized
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -830,17 +1082,35 @@ paths:
     post:
       tags:
         - Trail Management
-      summary: Create trail
-      description: Create a new trail with GeoJSON data (admin only)
+      summary: Create a new trail
+      description: Create a new trail with GeoJSON Feature format
       operationId: createTrail
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeoJSONFeature'
+              type: object
+              required:
+                - geometry
+              properties:
+                type:
+                  type: string
+                  enum: ["Feature"]
+                  default: "Feature"
+                  example: "Feature"
+                geometry:
+                  $ref: '#/components/schemas/GeoJSONGeometry'
+                properties:
+                  type: object
+                  description: Trail properties (fid, id, name, difficulty, etc.)
+                  example:
+                    fid: 123
+                    id: 456
+                    name: "Everest Base Camp Trail"
+                    difficulty: 4
       responses:
         '201':
           description: Trail created successfully
@@ -851,12 +1121,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail created successfully"
                   trail:
-                    $ref: '#/components/schemas/GeoJSONFeature'
+                    $ref: '#/components/schemas/Trail'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -873,10 +1157,10 @@ paths:
       tags:
         - Trail Management
       summary: Get trail by ID
-      description: Get a specific trail by ID
+      description: Retrieve a specific trail by its ID
       operationId: getTrailById
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -884,6 +1168,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail
       responses:
         '200':
           description: Trail retrieved successfully
@@ -894,8 +1180,27 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   trail:
-                    $ref: '#/components/schemas/GeoJSONFeature'
+                    $ref: '#/components/schemas/Trail'
+        '400':
+          description: Invalid trail ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Trail not found
           content:
@@ -913,10 +1218,10 @@ paths:
       tags:
         - Trail Management
       summary: Update trail
-      description: Update an existing trail. All fields are optional.
+      description: Update an existing trail's geometry or properties
       operationId: updateTrail
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -924,12 +1229,24 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GeoJSONFeature'
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum: ["Feature"]
+                  example: "Feature"
+                geometry:
+                  $ref: '#/components/schemas/GeoJSONGeometry'
+                properties:
+                  type: object
+                  description: Trail properties
       responses:
         '200':
           description: Trail updated successfully
@@ -940,12 +1257,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail updated successfully"
                   trail:
-                    $ref: '#/components/schemas/GeoJSONFeature'
+                    $ref: '#/components/schemas/Trail'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -967,10 +1298,10 @@ paths:
       tags:
         - Trail Management
       summary: Delete trail
-      description: Delete a trail by ID
+      description: Delete a trail from the system
       operationId: deleteTrail
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -978,6 +1309,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail
       responses:
         '200':
           description: Trail deleted successfully
@@ -988,8 +1321,28 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail deleted successfully"
+        '400':
+          description: Invalid trail ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Trail not found
           content:
@@ -1008,14 +1361,16 @@ paths:
       tags:
         - Trail Info Management
       summary: Get all trail info
-      description: Get all trail information records. Public endpoint (no authentication required).
+      description: Retrieve a list of all trail information records
       operationId: getAllTrailInfo
-      security: []
+      security:
+        - bearerAuth: []
       parameters:
         - name: isFeatured
           in: query
           schema:
             type: boolean
+          example: true
           description: Filter by featured status
       responses:
         '200':
@@ -1030,11 +1385,23 @@ paths:
                     example: true
                   count:
                     type: integer
-                    example: 25
+                    example: 50
                   trailInfo:
                     type: array
                     items:
                       $ref: '#/components/schemas/TrailInfo'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
           content:
@@ -1047,11 +1414,11 @@ paths:
         - Trail Info Management
       summary: Create trail info
       description: |
-        Create detailed trail information. Supports automatic Trail (GeoJSON) creation if geometry is provided.
-        If geometry is provided, a Trail will be automatically created first, and its ID will be used as the trailId foreign key.
+        Create a new trail information record. Can optionally create a Trail automatically if geometry is provided.
+        Supports both multipart/form-data (for image upload) and application/json.
       operationId: createTrailInfo
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -1075,67 +1442,203 @@ paths:
               properties:
                 name:
                   type: string
+                  example: "Everest Base Camp Trek"
                 region:
                   type: string
+                  example: "Khumbu"
                 country:
                   type: string
+                  example: "Nepal"
                 description:
                   type: string
+                  example: "A challenging trek to the base of the world's highest mountain"
                 difficulty:
                   type: string
+                  example: "Hard"
                 duration_days:
                   type: integer
-                  minimum: 1
+                  example: 14
                 total_distance_km:
                   type: number
+                  example: 130
+                best_season:
+                  type: string
+                  format: json
+                  example: '["Spring", "Autumn"]'
+                  description: JSON string array
+                major_highlights:
+                  type: string
+                  format: json
+                  example: '["Mount Everest", "Kala Patthar", "Namche Bazaar"]'
+                  description: JSON string array
+                starting_point:
+                  type: string
+                  format: json
+                  example: '{"name": "Lukla", "altitude_m": 2840}'
+                  description: JSON string object
+                ending_point:
+                  type: string
+                  format: json
+                  example: '{"name": "Everest Base Camp", "altitude_m": 5364}'
+                  description: JSON string object
+                altitude_min_m:
+                  type: number
+                  example: 2840
+                altitude_max_m:
+                  type: number
+                  example: 5545
+                permit_required:
+                  type: string
+                  format: json
+                  example: '["Sagarmatha National Park Permit", "TIMS Card"]'
+                  description: JSON string array (optional)
+                environment:
+                  type: string
+                  format: json
+                  example: '{"wildlife": ["Snow Leopard", "Himalayan Tahr"], "local_culture": "Sherpa culture", "climate_conditions": "Cold and dry", "conservation_rules": "Leave no trace"}'
+                  description: JSON string object (optional)
+                user_content:
+                  type: string
+                  format: json
+                  example: '{"rating_avg": 4.5, "rating_count": 120}'
+                  description: JSON string object (optional)
+                location:
+                  type: string
+                  example: "Khumbu Region, Nepal"
+                time:
+                  type: string
+                  example: "14 days"
+                activityType:
+                  type: string
+                  enum: ["Hike", "Trekking", "City Tour"]
+                  example: "Trekking"
+                isFeatured:
+                  type: boolean
+                  example: true
+                trailId:
+                  type: string
+                  example: "507f1f77bcf86cd799439011"
+                  description: Optional existing trail ID
+                geometry:
+                  type: string
+                  format: json
+                  example: '{"type": "LineString", "coordinates": [[86.712, 27.802], [86.715, 27.805]]}'
+                  description: Optional GeoJSON geometry to create Trail automatically
+                trailProperties:
+                  type: string
+                  format: json
+                  example: '{"fid": 123, "id": 456, "name": "Everest Base Camp Trail", "difficulty": 4}'
+                  description: Optional trail properties for auto-created Trail
+                image:
+                  type: string
+                  format: binary
+                  description: Image file (alternative to imageUrl)
+                imageUrl:
+                  type: string
+                  example: "https://example.com/image.jpg"
+                  description: Image URL (alternative to image file)
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - region
+                - country
+                - description
+                - difficulty
+                - duration_days
+                - total_distance_km
+                - best_season
+                - major_highlights
+                - starting_point
+                - ending_point
+                - altitude_min_m
+                - altitude_max_m
+                - imageUrl
+              properties:
+                name:
+                  type: string
+                  example: "Everest Base Camp Trek"
+                region:
+                  type: string
+                  example: "Khumbu"
+                country:
+                  type: string
+                  example: "Nepal"
+                description:
+                  type: string
+                  example: "A challenging trek to the base of the world's highest mountain"
+                difficulty:
+                  type: string
+                  example: "Hard"
+                duration_days:
+                  type: integer
+                  example: 14
+                total_distance_km:
+                  type: number
+                  example: 130
                 best_season:
                   type: array
                   items:
                     type: string
+                  example: ["Spring", "Autumn"]
                 major_highlights:
                   type: array
                   items:
                     type: string
+                  example: ["Mount Everest", "Kala Patthar", "Namche Bazaar"]
                 starting_point:
-                  type: string
-                  description: JSON string with name and altitude_m
+                  $ref: '#/components/schemas/Point'
                 ending_point:
-                  type: string
-                  description: JSON string with name and altitude_m
+                  $ref: '#/components/schemas/Point'
                 altitude_min_m:
                   type: number
+                  example: 2840
                 altitude_max_m:
                   type: number
+                  example: 5545
                 permit_required:
                   type: array
                   items:
                     type: string
+                  example: ["Sagarmatha National Park Permit", "TIMS Card"]
                 environment:
-                  type: string
-                  description: JSON string
+                  $ref: '#/components/schemas/Environment'
                 user_content:
+                  $ref: '#/components/schemas/UserContent'
+                location:
                   type: string
-                  description: JSON string
-                image:
+                  example: "Khumbu Region, Nepal"
+                time:
                   type: string
-                  format: binary
-                imageUrl:
-                  type: string
-                  description: Alternative to image file upload
-                geometry:
-                  type: string
-                  description: JSON string of GeoJSON geometry
-                trailProperties:
-                  type: string
-                  description: JSON string of trail properties
-                trailId:
-                  type: string
-                  description: ID of existing Trail (optional if geometry provided)
+                  example: "14 days"
                 activityType:
                   type: string
-                  enum: [Hike, Trekking, City Tour]
+                  enum: ["Hike", "Trekking", "City Tour"]
+                  example: "Trekking"
                 isFeatured:
                   type: boolean
+                  example: true
+                trailId:
+                  type: string
+                  pattern: '^[0-9a-fA-F]{24}$'
+                  example: "507f1f77bcf86cd799439011"
+                  description: Optional existing trail ID
+                geometry:
+                  $ref: '#/components/schemas/GeoJSONGeometry'
+                  description: Optional GeoJSON geometry to create Trail automatically
+                trailProperties:
+                  type: object
+                  description: Optional trail properties for auto-created Trail
+                  example:
+                    fid: 123
+                    id: 456
+                    name: "Everest Base Camp Trail"
+                    difficulty: 4
+                imageUrl:
+                  type: string
+                  format: uri
+                  example: "https://example.com/image.jpg"
       responses:
         '201':
           description: Trail info created successfully
@@ -1146,15 +1649,37 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail info created successfully"
                   trailInfo:
                     $ref: '#/components/schemas/TrailInfo'
                   trail:
-                    $ref: '#/components/schemas/GeoJSONFeature'
+                    type: object
                     nullable: true
+                    description: Trail object if created automatically
+                    properties:
+                      _id:
+                        type: string
+                      type:
+                        type: string
+                      geometry:
+                        $ref: '#/components/schemas/GeoJSONGeometry'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1171,9 +1696,10 @@ paths:
       tags:
         - Trail Info Management
       summary: Get featured trails
-      description: Get all featured trails in a simplified format. Public endpoint (no authentication required).
+      description: Retrieve a simplified list of featured trails
       operationId: getFeaturedTrails
-      security: []
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Featured trails retrieved successfully
@@ -1195,21 +1721,41 @@ paths:
                       properties:
                         id:
                           type: string
-                          format: objectid
+                          example: "507f1f77bcf86cd799439011"
                         name:
                           type: string
+                          example: "Everest Base Camp Trek"
                         region:
                           type: string
+                          example: "Khumbu"
                         country:
                           type: string
+                          example: "Nepal"
                         difficulty:
                           type: string
+                          example: "Hard"
                         duration_days:
                           type: integer
+                          example: 14
                         activityType:
                           type: string
+                          example: "Trekking"
                         image:
                           type: string
+                          format: uri
+                          example: "https://cloudinary.com/image.jpg"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Server error
           content:
@@ -1222,9 +1768,10 @@ paths:
       tags:
         - Trail Info Management
       summary: Get trail info by ID
-      description: Get a specific trail information record by ID. Public endpoint (no authentication required).
+      description: Retrieve a specific trail information record by its ID
       operationId: getTrailInfoById
-      security: []
+      security:
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1232,7 +1779,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
-          description: Trail info ID (MongoDB ObjectId)
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail info
       responses:
         '200':
           description: Trail info retrieved successfully
@@ -1247,7 +1795,19 @@ paths:
                   trailInfo:
                     $ref: '#/components/schemas/TrailInfo'
         '400':
-          description: Invalid trail info ID format
+          description: Invalid trail info ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1269,10 +1829,12 @@ paths:
       tags:
         - Trail Info Management
       summary: Update trail info
-      description: Update an existing trail information record. All fields are optional - partial update supported.
+      description: |
+        Update an existing trail information record.
+        Supports both multipart/form-data (for image upload) and application/json.
       operationId: updateTrailInfo
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1280,10 +1842,71 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail info
       requestBody:
         required: true
         content:
           multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                region:
+                  type: string
+                country:
+                  type: string
+                description:
+                  type: string
+                difficulty:
+                  type: string
+                duration_days:
+                  type: integer
+                total_distance_km:
+                  type: number
+                best_season:
+                  type: string
+                  format: json
+                major_highlights:
+                  type: string
+                  format: json
+                starting_point:
+                  type: string
+                  format: json
+                ending_point:
+                  type: string
+                  format: json
+                altitude_min_m:
+                  type: number
+                altitude_max_m:
+                  type: number
+                permit_required:
+                  type: string
+                  format: json
+                environment:
+                  type: string
+                  format: json
+                user_content:
+                  type: string
+                  format: json
+                location:
+                  type: string
+                time:
+                  type: string
+                activityType:
+                  type: string
+                  enum: ["Hike", "Trekking", "City Tour"]
+                isFeatured:
+                  type: boolean
+                trailId:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+                imageUrl:
+                  type: string
+          application/json:
             schema:
               type: object
               properties:
@@ -1310,9 +1933,9 @@ paths:
                   items:
                     type: string
                 starting_point:
-                  type: string
+                  $ref: '#/components/schemas/Point'
                 ending_point:
-                  type: string
+                  $ref: '#/components/schemas/Point'
                 altitude_min_m:
                   type: number
                 altitude_max_m:
@@ -1322,20 +1945,24 @@ paths:
                   items:
                     type: string
                 environment:
-                  type: string
+                  $ref: '#/components/schemas/Environment'
                 user_content:
+                  $ref: '#/components/schemas/UserContent'
+                location:
                   type: string
-                image:
-                  type: string
-                  format: binary
-                imageUrl:
-                  type: string
-                trailId:
+                time:
                   type: string
                 activityType:
                   type: string
+                  enum: ["Hike", "Trekking", "City Tour"]
                 isFeatured:
                   type: boolean
+                trailId:
+                  type: string
+                  pattern: '^[0-9a-fA-F]{24}$'
+                imageUrl:
+                  type: string
+                  format: uri
       responses:
         '200':
           description: Trail info updated successfully
@@ -1346,12 +1973,26 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail info updated successfully"
                   trailInfo:
                     $ref: '#/components/schemas/TrailInfo'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1373,10 +2014,10 @@ paths:
       tags:
         - Trail Info Management
       summary: Delete trail info
-      description: Delete a trail information record by ID
+      description: Delete a trail information record and its associated image from Cloudinary
       operationId: deleteTrailInfo
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       parameters:
         - name: id
           in: path
@@ -1384,6 +2025,8 @@ paths:
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
+          example: "507f1f77bcf86cd799439011"
+          description: MongoDB ObjectId of the trail info
       responses:
         '200':
           description: Trail info deleted successfully
@@ -1394,8 +2037,28 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: "Trail info deleted successfully"
+        '400':
+          description: Invalid trail info ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Trail info not found
           content:
@@ -1414,10 +2077,10 @@ paths:
       tags:
         - Statistics
       summary: Get dashboard statistics
-      description: Get comprehensive dashboard statistics including user counts, guide counts, trail counts, recent activity, and breakdowns
+      description: Retrieve comprehensive dashboard statistics including user counts, guide counts, trail counts, and various breakdowns
       operationId: getDashboardStats
       security:
-        - BearerAuth: []
+        - bearerAuth: []
       responses:
         '200':
           description: Statistics retrieved successfully
@@ -1428,54 +2091,17 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   stats:
-                    type: object
-                    properties:
-                      overview:
-                        type: object
-                        properties:
-                          totalUsers:
-                            type: integer
-                          totalGuides:
-                            type: integer
-                          totalTrails:
-                            type: integer
-                          activeUsers:
-                            type: integer
-                          activeGuides:
-                            type: integer
-                          activeTrails:
-                            type: integer
-                      recentActivity:
-                        type: object
-                        properties:
-                          recentUsers:
-                            type: integer
-                          recentGuides:
-                            type: integer
-                          recentTrails:
-                            type: integer
-                          period:
-                            type: string
-                      breakdowns:
-                        type: object
-                        properties:
-                          usersByRole:
-                            type: object
-                          usersBySubscription:
-                            type: object
-                          trailsByDifficulty:
-                            type: object
-                          guidesByExperience:
-                            type: object
+                    $ref: '#/components/schemas/DashboardStats'
         '401':
-          description: Unauthorized
+          description: Not authenticated
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden
+          description: Admin access required
           content:
             application/json:
               schema:
@@ -1489,40 +2115,61 @@ paths:
 
 components:
   securitySchemes:
-    BearerAuth:
+    bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT token from admin login endpoint
+      description: JWT token obtained from /auth/login endpoint
 
   schemas:
-    AdminAuthResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "Admin login successful"
-        token:
-          type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        admin:
-          oneOf:
-            - $ref: '#/components/schemas/User'
-            - $ref: '#/components/schemas/Guide'
-        type:
-          type: string
-          enum: [user, guide]
-          example: "user"
-
-    User:
+    AdminProfile:
       type: object
       properties:
         id:
           type: string
-          format: objectid
+          example: "507f1f77bcf86cd799439011"
+        firstName:
+          type: string
+          example: "Admin"
+        lastName:
+          type: string
+          example: "User"
+        email:
+          type: string
+          format: email
+          example: "admin@yatrax.com"
+        role:
+          type: string
+          enum: ["admin"]
+          example: "admin"
+        type:
+          type: string
+          enum: ["user", "guide"]
+          example: "user"
+          description: Model type (user or guide)
+        subscription:
+          type: string
+          enum: ["free", "premium"]
+          example: "premium"
+          description: Only present if type is "user"
+        country:
+          type: string
+          example: "Nepal"
+          description: Only present if type is "user"
+        description:
+          type: string
+          example: "Experienced guide"
+          description: Only present if type is "guide"
+        TBNumber:
+          type: string
+          example: "TB-12345"
+          description: Only present if type is "guide"
+
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
           example: "507f1f77bcf86cd799439011"
         firstName:
           type: string
@@ -1536,47 +2183,79 @@ components:
           example: "user@example.com"
         country:
           type: string
-          nullable: true
           example: "Nepal"
         role:
           type: string
-          enum: [user, porter, admin]
+          enum: ["user", "porter", "admin"]
           example: "user"
         subscription:
           type: string
-          enum: [free, premium]
+          enum: ["free", "premium"]
           example: "free"
+        authProvider:
+          type: string
+          enum: ["local", "google"]
+          example: "local"
         createdAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
         updatedAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
 
-    Guide:
+    UserBasic:
       type: object
       properties:
         id:
           type: string
-          format: objectid
-          example: "507f1f77bcf86cd799439021"
+          example: "507f1f77bcf86cd799439011"
         firstName:
           type: string
-          example: "Sherpa"
+          example: "John"
         lastName:
           type: string
-          example: "Tenzing"
+          example: "Doe"
         email:
           type: string
           format: email
-          example: "tenzing@example.com"
+          example: "user@example.com"
+        country:
+          type: string
+          example: "Nepal"
         role:
           type: string
-          enum: [guide, admin]
+          enum: ["user", "porter", "admin"]
+          example: "user"
+        subscription:
+          type: string
+          enum: ["free", "premium"]
+          example: "free"
+
+    Guide:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        firstName:
+          type: string
+          example: "Ram"
+        lastName:
+          type: string
+          example: "Shrestha"
+        email:
+          type: string
+          format: email
+          example: "guide@example.com"
+        role:
+          type: string
+          enum: ["guide", "admin"]
           example: "guide"
         description:
           type: string
-          example: "Experienced mountain guide with 10+ years"
+          example: "Experienced trekking guide with 10 years of experience"
         TBNumber:
           type: string
           example: "TB-12345"
@@ -1584,48 +2263,118 @@ components:
           type: array
           items:
             type: string
-          example: ["Everest Base Camp", "Annapurna Circuit"]
+          example: ["Everest Base Camp", "Annapurna Circuit", "Langtang"]
         experience:
           type: integer
           example: 10
         education:
           type: string
-          example: "Mountain Guide Certification"
+          example: "Bachelor's in Tourism"
         languages:
           type: array
           items:
             type: string
-          example: ["English", "Nepali", "Tibetan"]
+          example: ["English", "Nepali", "Hindi"]
         ratePerDay:
           type: number
-          example: 5000
+          example: 50
         certifications:
           type: array
           items:
             type: string
-          example: ["IFMGA Certified", "Wilderness First Aid"]
+          example: ["Wilderness First Aid", "Mountain Guide Certification"]
+        photo:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://cloudinary.com/photo.jpg"
         createdAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
         updatedAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
 
-    GeoJSONFeature:
+    GuideBasic:
       type: object
-      required:
-        - type
-        - geometry
       properties:
+        id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        firstName:
+          type: string
+          example: "Ram"
+        lastName:
+          type: string
+          example: "Shrestha"
+        email:
+          type: string
+          format: email
+          example: "guide@example.com"
+        role:
+          type: string
+          enum: ["guide", "admin"]
+          example: "guide"
+        description:
+          type: string
+          example: "Experienced trekking guide"
+        TBNumber:
+          type: string
+          example: "TB-12345"
+        trekAreas:
+          type: array
+          items:
+            type: string
+        experience:
+          type: integer
+        education:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        ratePerDay:
+          type: number
+        certifications:
+          type: array
+          items:
+            type: string
+
+    Trail:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
         type:
           type: string
-          enum: [Feature]
-          default: Feature
+          enum: ["Feature"]
+          example: "Feature"
         geometry:
           $ref: '#/components/schemas/GeoJSONGeometry'
         properties:
           type: object
-          additionalProperties: true
+          description: Trail properties (fid, id, name, difficulty, trailInfoId, activityType, etc.)
+          example:
+            fid: 123
+            id: 456
+            name: "Everest Base Camp Trail"
+            difficulty: 4
+            trailInfoId: "507f1f77bcf86cd799439012"
+            activityType: "Trekking"
+        trailInfo:
+          $ref: '#/components/schemas/TrailInfo'
+          description: Populated trail info if available
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00.000Z"
 
     GeoJSONGeometry:
       type: object
@@ -1635,17 +2384,24 @@ components:
       properties:
         type:
           type: string
-          enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon]
+          enum: ["Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"]
+          example: "LineString"
         coordinates:
           oneOf:
             - type: array
               items:
                 type: number
+              minItems: 2
+              maxItems: 2
+              description: Point coordinates [longitude, latitude]
+              example: [86.712, 27.802]
             - type: array
               items:
                 type: array
                 items:
                   type: number
+              description: LineString or MultiPoint coordinates
+              example: [[86.712, 27.802], [86.715, 27.805]]
             - type: array
               items:
                 type: array
@@ -1653,85 +2409,247 @@ components:
                   type: array
                   items:
                     type: number
+              description: Polygon or MultiLineString coordinates
+              example: [[[86.712, 27.802], [86.715, 27.805], [86.718, 27.808], [86.712, 27.802]]]
+            - type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: array
+                    items:
+                      type: number
+              description: MultiPolygon coordinates
 
     TrailInfo:
       type: object
       properties:
         _id:
           type: string
-          format: objectid
+          example: "507f1f77bcf86cd799439011"
         name:
           type: string
+          example: "Everest Base Camp Trek"
         region:
           type: string
+          example: "Khumbu"
         country:
           type: string
+          example: "Nepal"
         description:
           type: string
+          example: "A challenging trek to the base of the world's highest mountain"
         difficulty:
           type: string
+          example: "Hard"
         duration_days:
           type: integer
+          example: 14
         total_distance_km:
           type: number
+          example: 130
         best_season:
           type: array
           items:
             type: string
+          example: ["Spring", "Autumn"]
         major_highlights:
           type: array
           items:
             type: string
+          example: ["Mount Everest", "Kala Patthar", "Namche Bazaar"]
         starting_point:
-          type: object
-          properties:
-            name:
-              type: string
-            altitude_m:
-              type: number
+          $ref: '#/components/schemas/Point'
         ending_point:
-          type: object
-          properties:
-            name:
-              type: string
-            altitude_m:
-              type: number
+          $ref: '#/components/schemas/Point'
         altitude_min_m:
           type: number
+          example: 2840
         altitude_max_m:
           type: number
+          example: 5545
         permit_required:
           type: array
           items:
             type: string
+          example: ["Sagarmatha National Park Permit", "TIMS Card"]
         environment:
-          type: object
+          $ref: '#/components/schemas/Environment'
         user_content:
-          type: object
-          properties:
-            rating_avg:
-              type: number
-            rating_count:
-              type: integer
+          $ref: '#/components/schemas/UserContent'
         image:
           type: string
-          nullable: true
-        isFeatured:
-          type: boolean
-        trailId:
+          format: uri
+          example: "https://cloudinary.com/image.jpg"
+        location:
           type: string
-          format: objectid
-          nullable: true
+          example: "Khumbu Region, Nepal"
+        time:
+          type: string
+          example: "14 days"
         activityType:
           type: string
-          enum: [Hike, Trekking, City Tour]
+          enum: ["Hike", "Trekking", "City Tour"]
+          example: "Trekking"
+        isFeatured:
+          type: boolean
+          example: true
+        trailId:
+          type: string
           nullable: true
+          example: "507f1f77bcf86cd799439011"
         createdAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
         updatedAt:
           type: string
           format: date-time
+          example: "2024-01-01T00:00:00.000Z"
+
+    Point:
+      type: object
+      required:
+        - name
+        - altitude_m
+      properties:
+        name:
+          type: string
+          example: "Lukla"
+        altitude_m:
+          type: number
+          example: 2840
+
+    Environment:
+      type: object
+      properties:
+        wildlife:
+          type: array
+          items:
+            type: string
+          example: ["Snow Leopard", "Himalayan Tahr"]
+        local_culture:
+          type: string
+          example: "Sherpa culture"
+        climate_conditions:
+          type: string
+          example: "Cold and dry"
+        conservation_rules:
+          type: string
+          example: "Leave no trace"
+
+    UserContent:
+      type: object
+      properties:
+        rating_avg:
+          type: number
+          minimum: 0
+          maximum: 5
+          example: 4.5
+        rating_count:
+          type: integer
+          minimum: 0
+          example: 120
+
+    DashboardStats:
+      type: object
+      properties:
+        overview:
+          type: object
+          properties:
+            totalUsers:
+              type: integer
+              example: 1500
+            totalGuides:
+              type: integer
+              example: 200
+            totalTrails:
+              type: integer
+              example: 150
+            activeUsers:
+              type: integer
+              example: 500
+              description: Users with premium subscription
+            activeGuides:
+              type: integer
+              example: 180
+              description: Guides with role "guide"
+            activeTrails:
+              type: integer
+              example: 140
+              description: "Trails with isActive: true"
+        recentActivity:
+          type: object
+          properties:
+            recentUsers:
+              type: integer
+              example: 50
+            recentGuides:
+              type: integer
+              example: 10
+            recentTrails:
+              type: integer
+              example: 5
+            period:
+              type: string
+              example: "last 30 days"
+        breakdowns:
+          type: object
+          properties:
+            usersByRole:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                user: 1200
+                porter: 200
+                admin: 100
+            usersBySubscription:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                free: 1000
+                premium: 500
+            trailsByDifficulty:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                "1": 20
+                "2": 30
+                "3": 40
+                "4": 35
+                "5": 25
+            guidesByExperience:
+              type: array
+              items:
+                type: object
+                properties:
+                  _id:
+                    type: object
+                    properties:
+                      min:
+                        type: number
+                      max:
+                        type: number
+                    description: Experience range
+                  count:
+                    type: integer
+              example:
+                - _id: { min: 0, max: 1 }
+                  count: 20
+                - _id: { min: 1, max: 3 }
+                  count: 50
+                - _id: { min: 3, max: 5 }
+                  count: 60
+                - _id: { min: 5, max: 10 }
+                  count: 40
+                - _id: { min: 10, max: 20 }
+                  count: 20
+                - _id: "20+"
+                  count: 10
 
     ErrorResponse:
       type: object
@@ -1741,9 +2659,8 @@ components:
           example: false
         message:
           type: string
-          example: "An error occurred"
+          example: "Error message"
         error:
           type: string
-          nullable: true
-
-
+          example: "Detailed error message"
+          description: Optional detailed error information
