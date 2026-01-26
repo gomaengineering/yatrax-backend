@@ -7,6 +7,7 @@ import {
   updateGuide,
   deleteGuide,
 } from "../../controllers/web/guideController.js";
+import { protect, isResourceOwner } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ const router = express.Router();
 router.post("/", createGuide);
 router.get("/", getAllGuides);
 router.get("/:id", getGuideById);
-router.put("/:id", updateGuide);
-router.delete("/:id", deleteGuide);
+router.put("/:id", protect, isResourceOwner('guide'), updateGuide);
+router.delete("/:id", protect, isResourceOwner('guide'), deleteGuide);
 
 export default router;
 

@@ -149,3 +149,65 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
+// Check if user owns the resource (or is admin)
+// Flexible ownership check for any resource type
+// Usage: isResourceOwner('guide') or isResourceOwner('user')
+// Must be used after protect middleware
+// Automatically allows admins to bypass
+export const isResourceOwner = (resourceType = 'guide') => {
+  return async (req, res, next) => {
+    try {
+      // Check if user is authenticated (should be set by protect middleware)
+      if (!req.user || !req.userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Not authorized, please login",
+        });
+      }
+
+      const resourceId = req.params.id;
+
+      if (!resourceId) {
+        return res.status(400).json({
+          success: false,
+          message: "Resource ID is required",
+        });
+      }
+
+      // Admins can access any resource
+      if (req.userRole === "admin") {
+        return next();
+      }
+
+      // Check ownership: user ID must match resource ID
+      if (req.userId.toString() !== resourceId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. You can only access your own ${resourceType} profile.`,
+        });
+      }
+
+      // Optional: Verify role matches resource type (extra security layer)
+      // This prevents a guide from accessing user resources and vice versa
+      const roleResourceMap = {
+        'guide': ['guide'],
+        'user': ['user', 'porter'],
+      };
+
+      if (roleResourceMap[resourceType] && !roleResourceMap[resourceType].includes(req.userRole)) {
+        return res.status(403).json({
+          success: false,
+          message: `Access denied. This endpoint is for ${resourceType} resources only.`,
+        });
+      }
+
+      next();
+    } catch (error) {
+      console.error("isResourceOwner middleware error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  };
+};
