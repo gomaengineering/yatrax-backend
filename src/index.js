@@ -28,6 +28,7 @@ import nativeTrailRoutes from './routes/native/trail.routes.js';
 import nativeTrailInfoRoutes from './routes/native/trailInfo.routes.js';
 import { nativeRateLimiter } from './middleware/nativeRateLimiter.js';
 import { nativeErrorHandler } from './middleware/nativeErrorHandler.js';
+import { protectAdminDocs } from './middleware/adminDocsAuth.js';
 
 dotenv.config();
 
@@ -65,7 +66,13 @@ app.get('/api-docs/web', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/web-api-swagger.html'));
 });
 
-app.get('/api-docs/admin', (req, res) => {
+// Admin docs login page
+app.get('/admin-docs-login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/admin-docs-login.html'));
+});
+
+// Protected admin docs page
+app.get('/api-docs/admin', protectAdminDocs, (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/admin-api-swagger.html'));
 });
 
