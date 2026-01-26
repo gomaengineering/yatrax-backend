@@ -18,13 +18,72 @@
             margin: 0;
             background: #fafafa;
         }
+        .auth-header {
+            background: #fff;
+            padding: 10px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .auth-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .logout-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .logout-btn:hover {
+            background: #d32f2f;
+        }
     </style>
 </head>
 <body>
+    <div class="auth-header">
+        <div class="auth-info">
+            <span id="adminEmail">Admin</span>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
     <script>
+        // Check authentication
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get('token');
+        const token = tokenFromUrl || sessionStorage.getItem('adminDocsToken');
+        const adminEmail = sessionStorage.getItem('adminDocsEmail');
+        
+        if (!token) {
+            window.location.href = '/admin-docs-login';
+        }
+        
+        // Store token in sessionStorage if it came from URL
+        if (tokenFromUrl && !sessionStorage.getItem('adminDocsToken')) {
+            sessionStorage.setItem('adminDocsToken', tokenFromUrl);
+            // Clean URL
+            window.history.replaceState({}, document.title, '/api-docs/admin');
+        }
+        
+        // Display admin email
+        if (adminEmail) {
+            document.getElementById('adminEmail').textContent = `Logged in as: ${adminEmail}`;
+        }
+        
+        // Logout function
+        function logout() {
+            sessionStorage.removeItem('adminDocsToken');
+            sessionStorage.removeItem('adminDocsEmail');
+            window.location.href = '/admin-docs-login';
+        }
+        
         window.onload = function() {
             const ui = SwaggerUIBundle({
                 url: "/docs/admin-api-openapi.yaml",
@@ -39,8 +98,32 @@
                 ],
                 layout: "StandaloneLayout",
                 validatorUrl: null,
-                tryItOutEnabled: true
+                tryItOutEnabled: true,
+                requestInterceptor: (request) => {
+                    // Add authentication token to all API requests
+                    const currentToken = sessionStorage.getItem('adminDocsToken');
+                    if (currentToken) {
+                        request.headers['Authorization'] = `Bearer ${currentToken}`;
+                    }
+                    return request;
+                }
             });
+            
+            // Set up authorization in Swagger UI
+            const currentToken = sessionStorage.getItem('adminDocsToken');
+            if (currentToken) {
+                ui.getSystem().authActions.authorize({
+                    bearerAuth: {
+                        name: 'bearerAuth',
+                        schema: {
+                            type: 'http',
+                            scheme: 'bearer',
+                            bearerFormat: 'JWT'
+                        },
+                        value: currentToken
+                    }
+                });
+            }
         };
     </script>
 </body>
