@@ -154,8 +154,8 @@ export const getAllTrails = async (req, res) => {
 
       return {
         type: trail.type,
+        id: trail._id.toString(),
         properties: {
-          id: trail._id.toString(),
           name: trailInfo?.name || trail.properties?.name || "Unnamed Trail",
           difficulty: trail.properties?.difficulty || null,
           activityType: trailInfo?.activityType || null,
