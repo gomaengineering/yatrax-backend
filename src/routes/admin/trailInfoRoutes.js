@@ -12,9 +12,9 @@ import { getAllTrailInfo, getFeaturedTrails, getTrailInfoById } from "../../cont
 const router = express.Router();
 
 // All GET routes require authentication and admin role
-router.get("/featured", protect, adminOnly, getFeaturedTrails); // Specific route before parameterized route
-router.get("/:id", protect, adminOnly, getTrailInfoById);
-router.get("/", protect, adminOnly, getAllTrailInfo);
+router.get("/featured", getFeaturedTrails); // Specific route before parameterized route
+router.get("/:id", getTrailInfoById);
+router.get("/", getAllTrailInfo);
 
 
 // Admin-only Trail Info Management Routes (Create, Update, Delete)
