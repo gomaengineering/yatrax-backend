@@ -1,5 +1,6 @@
 // controllers/web/guideController.js
 import Guide from "../../models/guideModel.js";
+import Trail from "../../models/trailModel.js";
 
 // 👤 CREATE GUIDE
 export const createGuide = async (req, res) => {
@@ -500,6 +501,156 @@ export const deleteGuide = async (req, res) => {
     });
   } catch (error) {
     console.error("Delete guide error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 🔗 ASSIGN TRAIL TO GUIDE
+export const assignTrailToGuide = async (req, res) => {
+  try {
+    const { guideId, trailId } = req.params;
+
+    // Validate IDs
+    if (!guideId || !trailId) {
+      return res.status(400).json({
+        success: false,
+        message: "Guide ID and Trail ID are required",
+      });
+    }
+
+    // Check if guide exists
+    const guide = await Guide.findById(guideId);
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    // Check if trail exists
+    const trail = await Trail.findById(trailId);
+    if (!trail) {
+      return res.status(404).json({
+        success: false,
+        message: "Trail not found",
+      });
+    }
+
+    // Assign trail to guide (syncs both sides)
+    const updatedGuide = await Guide.assignTrailToGuide(guideId, trailId);
+
+    res.status(200).json({
+      success: true,
+      message: "Trail assigned to guide successfully",
+      guide: updatedGuide,
+    });
+  } catch (error) {
+    console.error("Assign trail to guide error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide or trail ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 🔗 REMOVE TRAIL FROM GUIDE
+export const removeTrailFromGuide = async (req, res) => {
+  try {
+    const { guideId, trailId } = req.params;
+
+    // Validate IDs
+    if (!guideId || !trailId) {
+      return res.status(400).json({
+        success: false,
+        message: "Guide ID and Trail ID are required",
+      });
+    }
+
+    // Check if guide exists
+    const guide = await Guide.findById(guideId);
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    // Remove trail from guide (syncs both sides)
+    const updatedGuide = await Guide.removeTrailFromGuide(guideId, trailId);
+
+    res.status(200).json({
+      success: true,
+      message: "Trail removed from guide successfully",
+      guide: updatedGuide,
+    });
+  } catch (error) {
+    console.error("Remove trail from guide error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide or trail ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 📋 GET ALL TRAILS FOR A GUIDE
+export const getGuideTrails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const guide = await Guide.findById(id)
+      .select("-password")
+      .populate("trails");
+
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      guide: {
+        _id: guide._id,
+        firstName: guide.firstName,
+        lastName: guide.lastName,
+        email: guide.email,
+      },
+      trails: guide.trails || [],
+      count: guide.trails ? guide.trails.length : 0,
+    });
+  } catch (error) {
+    console.error("Get guide trails error:", error);
 
     if (error.name === "CastError") {
       return res.status(400).json({
