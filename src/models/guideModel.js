@@ -43,7 +43,7 @@ const guideSchema = new mongoose.Schema(
       trim: true,
       unique: true, // Multiple guides might not have TB Number
     },
-    trails: [
+    trekAreas: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Trail",
