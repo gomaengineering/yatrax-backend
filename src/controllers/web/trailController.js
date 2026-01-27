@@ -1,5 +1,6 @@
 // controllers/web/trailController.js
 import Trail from "../../models/trailModel.js";
+import Guide from "../../models/guideModel.js";
 
 // 🗺️ CREATE TRAIL (Save GeoJSON Feature)
 export const createTrail = async (req, res) => {
@@ -511,6 +512,48 @@ export const findTrailsIntersecting = async (req, res) => {
     });
   } catch (error) {
     console.error("Find trails intersecting error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 📋 GET ALL GUIDES FOR A TRAIL
+export const getTrailGuides = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const trail = await Trail.findById(id).populate("guides");
+
+    if (!trail) {
+      return res.status(404).json({
+        success: false,
+        message: "Trail not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      trail: {
+        _id: trail._id,
+        type: trail.type,
+        properties: trail.properties,
+      },
+      guides: trail.guides || [],
+      count: trail.guides ? trail.guides.length : 0,
+    });
+  } catch (error) {
+    console.error("Get trail guides error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid trail ID",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Server error",

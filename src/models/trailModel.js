@@ -28,6 +28,13 @@ const trailSchema = new mongoose.Schema(
         required: [true, "Coordinates are required"],
       },
     },
+    // Guides assigned to this trail
+    guides: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Guide",
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -41,6 +48,9 @@ trailSchema.index({ "properties.id": 1 });
 trailSchema.index({ "properties.name": 1 });
 trailSchema.index({ "properties.trailInfoId": 1 });
 trailSchema.index({ "properties.activityType": 1 });
+
+// Index for guides array
+trailSchema.index({ guides: 1 });
 
 // Validation method to ensure valid GeoJSON structure
 trailSchema.methods.validateGeoJSON = function () {
@@ -218,6 +228,53 @@ trailSchema.statics.populateTrailInfo = async function(trails) {
   });
   
   return trails;
+};
+
+// Static method to get all guides for a trail
+trailSchema.statics.getGuidesForTrail = async function(trailId) {
+  const trail = await this.findById(trailId).populate("guides");
+  return trail ? trail.guides : [];
+};
+
+// Static method to remove a guide from a trail (syncs both sides)
+trailSchema.statics.removeGuideFromTrail = async function(trailId, guideId) {
+  const Trail = this;
+  const Guide = mongoose.model("Guide");
+
+  // Remove guide from trail
+  await Trail.findByIdAndUpdate(trailId, {
+    $pull: { guides: guideId },
+  });
+
+  // Remove trail from guide
+  await Guide.findByIdAndUpdate(guideId, {
+    $pull: { trails: trailId },
+  });
+
+  return Trail.findById(trailId).populate("guides");
+};
+
+// Static method to remove all guides from a trail
+trailSchema.statics.removeAllGuidesFromTrail = async function(trailId) {
+  const Trail = this;
+  const Guide = mongoose.model("Guide");
+
+  const trail = await Trail.findById(trailId);
+  if (!trail || !trail.guides || trail.guides.length === 0) {
+    return trail;
+  }
+
+  // Remove trail from all guides
+  await Guide.updateMany(
+    { _id: { $in: trail.guides } },
+    { $pull: { trails: trailId } }
+  );
+
+  // Clear guides from trail
+  trail.guides = [];
+  await trail.save();
+
+  return trail;
 };
 
 const Trail = mongoose.models.Trail || mongoose.model("Trail", trailSchema);

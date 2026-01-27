@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide-Trail Relationship Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .api-base {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        button.success {
+            background: #27ae60;
+        }
+
+        button.success:hover {
+            background: #229954;
+        }
+
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .result-item h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .result-item p {
+            color: #666;
+            font-size: 14px;
+            margin: 5px 0;
+        }
+
+        .error {
+            background: #fee;
+            border-left-color: #e74c3c;
+            color: #c0392b;
+        }
+
+        .success-msg {
+            background: #efe;
+            border-left-color: #27ae60;
+            color: #229954;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .trail-item, .guide-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .trail-item strong, .guide-item strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ Guide-Trail Relationship Tester</h1>
+        <p class="subtitle">Test Many-to-Many Relationship Between Guides and Trails</p>
+        
+        <div class="api-base">
+            <strong>API Base URL:</strong> <span id="apiBase">http://localhost:8000/api/web</span>
+        </div>
+
+        <!-- Fetch Data Section -->
+        <div class="section">
+            <h2>📋 Fetch Data</h2>
+            <div class="grid">
+                <div>
+                    <button onclick="fetchGuides()" class="success">Fetch All Guides</button>
+                    <button onclick="fetchTrails()" class="success">Fetch All Trails</button>
+                </div>
+            </div>
+            <div id="fetchResults" class="results"></div>
+        </div>
+
+        <!-- Assign Trail to Guide Section -->
+        <div class="section">
+            <h2>🔗 Assign Trail to Guide</h2>
+            <div class="form-group">
+                <label for="assignGuideId">Guide ID:</label>
+                <input type="text" id="assignGuideId" placeholder="Enter Guide ID">
+            </div>
+            <div class="form-group">
+                <label for="assignTrailId">Trail ID:</label>
+                <input type="text" id="assignTrailId" placeholder="Enter Trail ID">
+            </div>
+            <button onclick="assignTrailToGuide()">Assign Trail to Guide</button>
+            <div id="assignResult" class="results"></div>
+        </div>
+
+        <!-- Remove Trail from Guide Section -->
+        <div class="section">
+            <h2>❌ Remove Trail from Guide</h2>
+            <div class="form-group">
+                <label for="removeGuideId">Guide ID:</label>
+                <input type="text" id="removeGuideId" placeholder="Enter Guide ID">
+            </div>
+            <div class="form-group">
+                <label for="removeTrailId">Trail ID:</label>
+                <input type="text" id="removeTrailId" placeholder="Enter Trail ID">
+            </div>
+            <button onclick="removeTrailFromGuide()" class="danger">Remove Trail from Guide</button>
+            <div id="removeResult" class="results"></div>
+        </div>
+
+        <!-- Get Trails for Guide Section -->
+        <div class="section">
+            <h2>📋 Get Trails for a Guide</h2>
+            <div class="form-group">
+                <label for="getTrailsGuideId">Guide ID:</label>
+                <input type="text" id="getTrailsGuideId" placeholder="Enter Guide ID">
+            </div>
+            <button onclick="getGuideTrails()" class="success">Get Guide's Trails</button>
+            <div id="getTrailsResult" class="results"></div>
+        </div>
+
+        <!-- Get Guides for Trail Section -->
+        <div class="section">
+            <h2>👥 Get Guides for a Trail</h2>
+            <div class="form-group">
+                <label for="getGuidesTrailId">Trail ID:</label>
+                <input type="text" id="getGuidesTrailId" placeholder="Enter Trail ID">
+            </div>
+            <button onclick="getTrailGuides()" class="success">Get Trail's Guides</button>
+            <div id="getGuidesResult" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/web';
+
+        // Helper function to display results
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '';
+            
+            if (isError) {
+                element.innerHTML = `<div class="result-item error">
+                    <h3>❌ Error</h3>
+                    <p>${data.message || JSON.stringify(data, null, 2)}</p>
+                </div>`;
+                return;
+            }
+
+            if (data.success) {
+                element.innerHTML = `<div class="result-item success-msg">
+                    <h3>✅ Success</h3>
+                    <p>${data.message || 'Operation completed successfully'}</p>
+                    <pre style="margin-top: 10px; background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                </div>`;
+            } else {
+                element.innerHTML = `<div class="result-item">
+                    <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                </div>`;
+            }
+        }
+
+        // Fetch all guides
+        async function fetchGuides() {
+            const element = document.getElementById('fetchResults');
+            element.innerHTML = '<div class="loading">Loading guides...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/guides`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<div class="result-item success-msg"><h3>✅ Guides Found: ' + data.count + '</h3>';
+                    if (data.guides && data.guides.length > 0) {
+                        data.guides.forEach(guide => {
+                            html += `<div class="guide-item">
+                                <strong>ID:</strong> ${guide._id}<br>
+                                <strong>Name:</strong> ${guide.firstName} ${guide.lastName}<br>
+                                <strong>Email:</strong> ${guide.email}<br>
+                                <strong>Trails:</strong> ${guide.trails ? guide.trails.length : 0}
+                            </div>`;
+                        });
+                    }
+                    html += '</div>';
+                    element.innerHTML = html;
+                } else {
+                    displayResult('fetchResults', data, true);
+                }
+            } catch (error) {
+                displayResult('fetchResults', { message: error.message }, true);
+            }
+        }
+
+        // Fetch all trails
+        async function fetchTrails() {
+            const element = document.getElementById('fetchResults');
+            element.innerHTML = '<div class="loading">Loading trails...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/trails`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const trails = data.data.trails || [];
+                    const count = trails.length;
+                    const total = data.data.pagination?.total || count;
+                    
+                    let html = '<div class="result-item success-msg"><h3>✅ Trails Found: ' + count + ' (Total: ' + total + ')</h3>';
+                    if (trails.length > 0) {
+                        trails.forEach(trail => {
+                            const trailName = trail.properties?.name || 'Unnamed Trail';
+                            html += `<div class="trail-item">
+                                <strong>ID:</strong> ${trail.id || trail._id || 'N/A'}<br>
+                                <strong>Name:</strong> ${trailName}<br>
+                                <strong>Type:</strong> ${trail.geometry?.type || 'N/A'}<br>
+                                <strong>Activity:</strong> ${trail.properties?.activityType || 'N/A'}<br>
+                                <strong>Region:</strong> ${trail.properties?.region || 'N/A'}
+                            </div>`;
+                        });
+                    }
+                    html += '</div>';
+                    element.innerHTML = html;
+                } else {
+                    displayResult('fetchResults', data, true);
+                }
+            } catch (error) {
+                displayResult('fetchResults', { message: error.message }, true);
+            }
+        }
+
+        // Assign trail to guide
+        async function assignTrailToGuide() {
+            const guideId = document.getElementById('assignGuideId').value.trim();
+            const trailId = document.getElementById('assignTrailId').value.trim();
+            
+            if (!guideId || !trailId) {
+                displayResult('assignResult', { message: 'Please enter both Guide ID and Trail ID' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/guides/${guideId}/trails/${trailId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                displayResult('assignResult', data, !data.success);
+            } catch (error) {
+                displayResult('assignResult', { message: error.message }, true);
+            }
+        }
+
+        // Remove trail from guide
+        async function removeTrailFromGuide() {
+            const guideId = document.getElementById('removeGuideId').value.trim();
+            const trailId = document.getElementById('removeTrailId').value.trim();
+            
+            if (!guideId || !trailId) {
+                displayResult('removeResult', { message: 'Please enter both Guide ID and Trail ID' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/guides/${guideId}/trails/${trailId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                displayResult('removeResult', data, !data.success);
+            } catch (error) {
+                displayResult('removeResult', { message: error.message }, true);
+            }
+        }
+
+        // Get trails for a guide
+        async function getGuideTrails() {
+            const guideId = document.getElementById('getTrailsGuideId').value.trim();
+            
+            if (!guideId) {
+                displayResult('getTrailsResult', { message: 'Please enter Guide ID' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/guides/${guideId}/trails`);
+                const data = await response.json();
+                displayResult('getTrailsResult', data, !data.success);
+            } catch (error) {
+                displayResult('getTrailsResult', { message: error.message }, true);
+            }
+        }
+
+        // Get guides for a trail
+        async function getTrailGuides() {
+            const trailId = document.getElementById('getGuidesTrailId').value.trim();
+            
+            if (!trailId) {
+                displayResult('getGuidesResult', { message: 'Please enter Trail ID' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/trails/${trailId}/guides`);
+                const data = await response.json();
+                displayResult('getGuidesResult', data, !data.success);
+            } catch (error) {
+                displayResult('getGuidesResult', { message: error.message }, true);
+            }
+        }
+    </script>
+</body>
+</html>

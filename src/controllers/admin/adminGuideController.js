@@ -1,5 +1,6 @@
 // controllers/admin/adminGuideController.js
 import Guide from "../../models/guideModel.js";
+import Trail from "../../models/trailModel.js";
 
 // GET ALL GUIDES
 export const getAllGuides = async (req, res) => {
@@ -247,11 +248,27 @@ export const createGuide = async (req, res) => {
       });
     }
 
-    // Validate arrays
+    // Validate trekAreas (should be array of trail IDs)
     if (!Array.isArray(trekAreas) || trekAreas.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "trekAreas must be a non-empty array",
+        message: "trekAreas must be a non-empty array of trail IDs",
+      });
+    }
+
+    // Validate that all trail IDs exist
+    const validTrails = await Trail.find({
+      _id: { $in: trekAreas },
+    });
+
+    if (validTrails.length !== trekAreas.length) {
+      const foundIds = validTrails.map((t) => t._id.toString());
+      const invalidIds = trekAreas.filter(
+        (id) => !foundIds.includes(id.toString())
+      );
+      return res.status(400).json({
+        success: false,
+        message: `Invalid trail IDs: ${invalidIds.join(", ")}`,
       });
     }
 
@@ -287,7 +304,7 @@ export const createGuide = async (req, res) => {
       });
     }
 
-    // Create guide
+    // Create guide (without trails first)
     const newGuide = await Guide.create({
       firstName,
       lastName,
@@ -295,7 +312,6 @@ export const createGuide = async (req, res) => {
       password,
       description,
       TBNumber,
-      trekAreas,
       experience,
       education,
       languages,
@@ -304,24 +320,20 @@ export const createGuide = async (req, res) => {
       role: role || "guide",
     });
 
+    // Assign trails to guide (syncs both sides)
+    if (trekAreas && trekAreas.length > 0) {
+      await Guide.assignTrailsToGuide(newGuide._id, trekAreas);
+    }
+
+    // Fetch the guide with populated trails
+    const guideWithTrails = await Guide.findById(newGuide._id)
+      .select("-password")
+      .populate("trekAreas");
+
     res.status(201).json({
       success: true,
       message: "Guide created successfully",
-      guide: {
-        id: newGuide._id,
-        firstName: newGuide.firstName,
-        lastName: newGuide.lastName,
-        email: newGuide.email,
-        role: newGuide.role,
-        description: newGuide.description,
-        TBNumber: newGuide.TBNumber,
-        trekAreas: newGuide.trekAreas,
-        experience: newGuide.experience,
-        education: newGuide.education,
-        languages: newGuide.languages,
-        ratePerDay: newGuide.ratePerDay,
-        certifications: newGuide.certifications,
-      },
+      guide: guideWithTrails,
     });
   } catch (error) {
     console.error("Create guide error:", error);
@@ -332,6 +344,156 @@ export const createGuide = async (req, res) => {
         error: error.message,
       });
     }
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 🔗 ASSIGN TRAIL TO GUIDE (Admin Only)
+export const assignTrailToGuide = async (req, res) => {
+  try {
+    const { guideId, trailId } = req.params;
+
+    // Validate IDs
+    if (!guideId || !trailId) {
+      return res.status(400).json({
+        success: false,
+        message: "Guide ID and Trail ID are required",
+      });
+    }
+
+    // Check if guide exists
+    const guide = await Guide.findById(guideId);
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    // Check if trail exists
+    const trail = await Trail.findById(trailId);
+    if (!trail) {
+      return res.status(404).json({
+        success: false,
+        message: "Trail not found",
+      });
+    }
+
+    // Assign trail to guide (syncs both sides)
+    const updatedGuide = await Guide.assignTrailToGuide(guideId, trailId);
+
+    res.status(200).json({
+      success: true,
+      message: "Trail assigned to guide successfully",
+      guide: updatedGuide,
+    });
+  } catch (error) {
+    console.error("Assign trail to guide error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide or trail ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 🔗 REMOVE TRAIL FROM GUIDE (Admin Only)
+export const removeTrailFromGuide = async (req, res) => {
+  try {
+    const { guideId, trailId } = req.params;
+
+    // Validate IDs
+    if (!guideId || !trailId) {
+      return res.status(400).json({
+        success: false,
+        message: "Guide ID and Trail ID are required",
+      });
+    }
+
+    // Check if guide exists
+    const guide = await Guide.findById(guideId);
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    // Remove trail from guide (syncs both sides)
+    const updatedGuide = await Guide.removeTrailFromGuide(guideId, trailId);
+
+    res.status(200).json({
+      success: true,
+      message: "Trail removed from guide successfully",
+      guide: updatedGuide,
+    });
+  } catch (error) {
+    console.error("Remove trail from guide error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide or trail ID",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
+// 📋 GET ALL TRAILS FOR A GUIDE (Admin Only)
+export const getGuideTrails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const guide = await Guide.findById(id)
+      .select("-password")
+      .populate("trekAreas");
+
+    if (!guide) {
+      return res.status(404).json({
+        success: false,
+        message: "Guide not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      guide: {
+        _id: guide._id,
+        firstName: guide.firstName,
+        lastName: guide.lastName,
+        email: guide.email,
+      },
+      trails: guide.trekAreas || [],
+      count: guide.trekAreas ? guide.trekAreas.length : 0,
+    });
+  } catch (error) {
+    console.error("Get guide trails error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide ID",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Server error",

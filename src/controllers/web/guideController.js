@@ -1,5 +1,6 @@
 // controllers/web/guideController.js
 import Guide from "../../models/guideModel.js";
+import Trail from "../../models/trailModel.js";
 
 // 👤 CREATE GUIDE
 export const createGuide = async (req, res) => {
@@ -38,7 +39,7 @@ export const createGuide = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "All fields are required: firstName, lastName, email, password, description, TBNumber, trekAreas, experience, education, languages, ratePerDay, certifications",
+          "All fields are required: firstName, lastName, email, password, description, TBNumber, trekAreas (array of trail IDs), experience, education, languages, ratePerDay, certifications",
       });
     }
 
@@ -51,11 +52,27 @@ export const createGuide = async (req, res) => {
       });
     }
 
-    // Validate arrays
+    // Validate trekAreas (should be array of trail IDs)
     if (!Array.isArray(trekAreas) || trekAreas.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "trekAreas must be a non-empty array",
+        message: "trekAreas must be a non-empty array of trail IDs",
+      });
+    }
+
+    // Validate that all trail IDs exist
+    const validTrails = await Trail.find({
+      _id: { $in: trekAreas },
+    });
+
+    if (validTrails.length !== trekAreas.length) {
+      const foundIds = validTrails.map((t) => t._id.toString());
+      const invalidIds = trekAreas.filter(
+        (id) => !foundIds.includes(id.toString())
+      );
+      return res.status(400).json({
+        success: false,
+        message: `Invalid trail IDs: ${invalidIds.join(", ")}`,
       });
     }
 
@@ -106,7 +123,7 @@ export const createGuide = async (req, res) => {
       });
     }
 
-    // Create guide
+    // Create guide (without trails first)
     const newGuide = await Guide.create({
       firstName,
       lastName,
@@ -114,7 +131,6 @@ export const createGuide = async (req, res) => {
       password,
       description,
       TBNumber,
-      trekAreas,
       experience,
       education,
       languages,
@@ -123,8 +139,18 @@ export const createGuide = async (req, res) => {
       role: role || "guide",
     });
 
+    // Assign trails to guide (syncs both sides)
+    if (trekAreas && trekAreas.length > 0) {
+      await Guide.assignTrailsToGuide(newGuide._id, trekAreas);
+    }
+
+    // Fetch the guide with populated trails
+    const guideWithTrails = await Guide.findById(newGuide._id)
+      .select("-password")
+      .populate("trekAreas");
+
     // Return guide without password
-    const guideResponse = newGuide.toObject();
+    const guideResponse = guideWithTrails.toObject();
     delete guideResponse.password;
 
     res.status(201).json({
@@ -515,4 +541,5 @@ export const deleteGuide = async (req, res) => {
     });
   }
 };
+
 
