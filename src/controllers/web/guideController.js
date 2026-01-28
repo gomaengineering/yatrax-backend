@@ -144,10 +144,9 @@ export const createGuide = async (req, res) => {
       await Guide.assignTrailsToGuide(newGuide._id, trekAreas);
     }
 
-    // Fetch the guide with populated trails
+    // Fetch the guide (trekAreas already contains _id and name)
     const guideWithTrails = await Guide.findById(newGuide._id)
-      .select("-password")
-      .populate("trekAreas");
+      .select("-password");
 
     // Return guide without password
     const guideResponse = guideWithTrails.toObject();
@@ -205,12 +204,12 @@ export const getAllGuides = async (req, res) => {
     // Build query
     const query = {};
 
-    // Filter by trek areas
+    // Filter by trek areas (now stored as embedded documents with _id)
     if (trekAreas) {
       const areas = Array.isArray(trekAreas)
         ? trekAreas
         : trekAreas.split(",").map((a) => a.trim());
-      query.trekAreas = { $in: areas };
+      query["trekAreas._id"] = { $in: areas };
     }
 
     // Filter by experience range
@@ -277,6 +276,9 @@ export const getAllGuides = async (req, res) => {
       .limit(limitNum)
       .skip(skip);
 
+    // trekAreas already contains _id and name in the database
+    const transformedGuides = guides.map(guide => guide.toObject());
+
     const total = await Guide.countDocuments(query);
 
     res.status(200).json({
@@ -285,7 +287,7 @@ export const getAllGuides = async (req, res) => {
       total,
       page: parseInt(page),
       pages: Math.ceil(total / limitNum),
-      guides,
+      guides: transformedGuides,
     });
   } catch (error) {
     console.error("Get all guides error:", error);
@@ -302,7 +304,8 @@ export const getGuideById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const guide = await Guide.findById(id).select("-password");
+    const guide = await Guide.findById(id)
+      .select("-password");
 
     if (!guide) {
       return res.status(404).json({
@@ -311,9 +314,12 @@ export const getGuideById = async (req, res) => {
       });
     }
 
+    // trekAreas already contains _id and name in the database
+    const guideObj = guide.toObject();
+
     res.status(200).json({
       success: true,
-      guide,
+      guide: guideObj,
     });
   } catch (error) {
     console.error("Get guide by ID error:", error);
@@ -454,7 +460,6 @@ export const updateGuide = async (req, res) => {
     if (password) updateData.password = password; // Will be hashed by pre-save hook
     if (description) updateData.description = description;
     if (TBNumber) updateData.TBNumber = TBNumber;
-    if (trekAreas) updateData.trekAreas = trekAreas;
     if (experience !== undefined) updateData.experience = experience;
     if (education) updateData.education = education;
     if (languages) updateData.languages = languages;
@@ -462,15 +467,68 @@ export const updateGuide = async (req, res) => {
     if (certifications) updateData.certifications = certifications;
     if (role) updateData.role = role;
 
+    // Handle trekAreas update separately to sync relationships
+    if (trekAreas !== undefined) {
+      // Validate that all trail IDs exist
+      const validTrails = await Trail.find({
+        _id: { $in: trekAreas },
+      });
+
+      if (validTrails.length !== trekAreas.length) {
+        const foundIds = validTrails.map((t) => t._id.toString());
+        const invalidIds = trekAreas.filter(
+          (id) => !foundIds.includes(id.toString())
+        );
+        return res.status(400).json({
+          success: false,
+          message: `Invalid trail IDs: ${invalidIds.join(", ")}`,
+        });
+      }
+
+      // Get old trail IDs for cleanup
+      const oldTrailIds = guide.trekAreas
+        ? guide.trekAreas.map((t) => t._id || t).filter(Boolean)
+        : [];
+
+      // Remove guide from old trails
+      if (oldTrailIds.length > 0) {
+        await Trail.updateMany(
+          { _id: { $in: oldTrailIds } },
+          { $pull: { guides: id } }
+        );
+      }
+
+      // Prepare new trails data with names
+      const trailsData = validTrails.map((trail) => ({
+        _id: trail._id,
+        name: trail.properties?.name || "Unnamed Trail",
+      }));
+
+      // Set new trails with names
+      updateData.trekAreas = trailsData;
+
+      // Add guide to new trails
+      if (trekAreas.length > 0) {
+        await Trail.updateMany(
+          { _id: { $in: trekAreas } },
+          { $addToSet: { guides: id } }
+        );
+      }
+    }
+
     const updatedGuide = await Guide.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
-    }).select("-password");
+    })
+      .select("-password");
+
+    // trekAreas already contains _id and name in the database
+    const guideObj = updatedGuide.toObject();
 
     res.status(200).json({
       success: true,
       message: "Guide updated successfully",
-      guide: updatedGuide,
+      guide: guideObj,
     });
   } catch (error) {
     console.error("Update guide error:", error);
@@ -511,14 +569,29 @@ export const deleteGuide = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const guide = await Guide.findByIdAndDelete(id);
-
+    const guide = await Guide.findById(id);
     if (!guide) {
       return res.status(404).json({
         success: false,
         message: "Guide not found",
       });
     }
+
+    // Get trail IDs from embedded documents
+    const trailIds = guide.trekAreas
+      ? guide.trekAreas.map((t) => t._id || t).filter(Boolean)
+      : [];
+
+    // Remove guide from all trails
+    if (trailIds.length > 0) {
+      await Trail.updateMany(
+        { _id: { $in: trailIds } },
+        { $pull: { guides: id } }
+      );
+    }
+
+    // Delete the guide
+    await Guide.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
