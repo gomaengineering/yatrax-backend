@@ -1,4 +1,5 @@
 import Guide from "../../models/guideModel.js";
+import TrailInfo from "../../models/trailInfoModel.js";
 import generateToken from "../../utils/generateToken.js";
 import { uploadImage } from "../../utils/cloudinary.js";
 
@@ -101,11 +102,27 @@ export const registerGuide = async (req, res) => {
       });
     }
 
-    // Validate arrays
+    // Validate trekAreas (should be array of trailInfo IDs)
     if (!Array.isArray(trekAreas) || trekAreas.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "TrekAreas must be a non-empty array" 
+      return res.status(400).json({
+        success: false,
+        message: "trekAreas must be a non-empty array of trailInfo IDs",
+      });
+    }
+
+    // Validate that all trailInfo IDs exist
+    const validTrailInfos = await TrailInfo.find({
+      _id: { $in: trekAreas },
+    });
+
+    if (validTrailInfos.length !== trekAreas.length) {
+      const foundIds = validTrailInfos.map((t) => t._id.toString());
+      const invalidIds = trekAreas.filter(
+        (id) => !foundIds.includes(id.toString())
+      );
+      return res.status(400).json({
+        success: false,
+        message: `Invalid trailInfo IDs: ${invalidIds.join(", ")}`,
       });
     }
 
@@ -136,12 +153,21 @@ export const registerGuide = async (req, res) => {
     if (existingGuide) {
       return res.status(400).json({ success: false, message: "Email already in use" });
     }
+
+    // Check if TBNumber already exists
+    const existingTBNumber = await Guide.findOne({ TBNumber });
+    if (existingTBNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "TBNumber already in use",
+      });
+    }
     
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: "Passwords do not match" });
     }
 
-    // Create guide
+    // Create guide (without trails first)
     const newGuide = await Guide.create({ 
       firstName, 
       lastName, 
@@ -150,7 +176,6 @@ export const registerGuide = async (req, res) => {
       role: role || "guide",
       description,
       TBNumber,
-      trekAreas,
       experience,
       education,
       languages,
@@ -159,28 +184,40 @@ export const registerGuide = async (req, res) => {
       photo: photoUrl
     });
 
+    // Assign trails to guide (syncs both sides and formats properly with IDs and names)
+    if (trekAreas && trekAreas.length > 0) {
+      await Guide.assignTrailsToGuide(newGuide._id, trekAreas);
+    }
+
+    // Fetch the guide with properly formatted trekAreas (contains _id and name)
+    const guideWithTrails = await Guide.findById(newGuide._id)
+      .select("-password");
+
     // Generate JWT token using the utility function
     const token = generateToken(newGuide._id, newGuide.role);
+
+    // Convert to object for response
+    const guideResponse = guideWithTrails.toObject();
 
     res.status(201).json({
       success: true,
       message: "Guide registered successfully",
       token,
       guide: {
-        id: newGuide._id,
-        firstName: newGuide.firstName,
-        lastName: newGuide.lastName,
-        email: newGuide.email,
-        role: newGuide.role,
-        description: newGuide.description,
-        TBNumber: newGuide.TBNumber,
-        trekAreas: newGuide.trekAreas,
-        experience: newGuide.experience,
-        education: newGuide.education,
-        languages: newGuide.languages,
-        ratePerDay: newGuide.ratePerDay,
-        certifications: newGuide.certifications,
-        photo: newGuide.photo,
+        id: guideResponse._id,
+        firstName: guideResponse.firstName,
+        lastName: guideResponse.lastName,
+        email: guideResponse.email,
+        role: guideResponse.role,
+        description: guideResponse.description,
+        TBNumber: guideResponse.TBNumber,
+        trekAreas: guideResponse.trekAreas,
+        experience: guideResponse.experience,
+        education: guideResponse.education,
+        languages: guideResponse.languages,
+        ratePerDay: guideResponse.ratePerDay,
+        certifications: guideResponse.certifications,
+        photo: guideResponse.photo,
       },
     });
   } catch (error) {
