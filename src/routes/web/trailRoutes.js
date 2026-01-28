@@ -11,6 +11,7 @@ import {
   findTrailsWithin,
   findTrailsWithinRadius,
   findTrailsIntersecting,
+  getTrailGuides,
 } from "../../controllers/web/trailController.js";
 
 const router = express.Router();
@@ -25,6 +26,11 @@ router.post("/intersecting", findTrailsIntersecting);
 router.post("/feature-collection", createTrailsFromFeatureCollection); // Import FeatureCollection
 router.post("/", createTrail);
 router.get("/", getAllTrails);
+
+// Trail-Guide Relationship Operations (must be before /:id route)
+router.get("/:id/guides", getTrailGuides);
+
+// Single trail operations (must be after relationship routes)
 router.get("/:id", getTrailById);
 router.put("/:id", updateTrail);
 router.delete("/:id", deleteTrail);

@@ -18,5 +18,8 @@ router.get("/:id", getGuideById);
 router.put("/:id", protect, isResourceOwner('guide'), updateGuide);
 router.delete("/:id", protect, isResourceOwner('guide'), deleteGuide);
 
+// Note: Guide-Trail relationship operations are admin-only
+// See /api/admin/guides routes for assign/remove trail functionality
+
 export default router;
 

@@ -6,6 +6,9 @@ import {
   createGuide,
   updateGuide,
   deleteGuide,
+  assignTrailToGuide,
+  removeTrailFromGuide,
+  getGuideTrails,
 } from "../../controllers/admin/adminGuideController.js";
 import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
@@ -16,8 +19,15 @@ router.use(protect, adminOnly);
 
 // Guide Management Routes
 router.get("/", getAllGuides);
-router.get("/:id", getGuideById);
 router.post("/", createGuide);
+
+// Guide-Trail Relationship Operations (Admin Only) - Must be before /:id route
+router.get("/:id/trails", getGuideTrails);
+router.post("/:guideId/trails/:trailId", assignTrailToGuide);
+router.delete("/:guideId/trails/:trailId", removeTrailFromGuide);
+
+// Single guide operations (must be after relationship routes)
+router.get("/:id", getGuideById);
 router.put("/:id", updateGuide);
 router.delete("/:id", deleteGuide);
 
