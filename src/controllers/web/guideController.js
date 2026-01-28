@@ -1,6 +1,7 @@
 // controllers/web/guideController.js
+import mongoose from "mongoose";
 import Guide from "../../models/guideModel.js";
-import Trail from "../../models/trailModel.js";
+import TrailInfo from "../../models/trailInfoModel.js";
 
 // 👤 CREATE GUIDE
 export const createGuide = async (req, res) => {
@@ -60,19 +61,19 @@ export const createGuide = async (req, res) => {
       });
     }
 
-    // Validate that all trail IDs exist
-    const validTrails = await Trail.find({
+    // Validate that all trailInfo IDs exist
+    const validTrailInfos = await TrailInfo.find({
       _id: { $in: trekAreas },
     });
 
-    if (validTrails.length !== trekAreas.length) {
-      const foundIds = validTrails.map((t) => t._id.toString());
+    if (validTrailInfos.length !== trekAreas.length) {
+      const foundIds = validTrailInfos.map((t) => t._id.toString());
       const invalidIds = trekAreas.filter(
         (id) => !foundIds.includes(id.toString())
       );
       return res.status(400).json({
         success: false,
-        message: `Invalid trail IDs: ${invalidIds.join(", ")}`,
+        message: `Invalid trailInfo IDs: ${invalidIds.join(", ")}`,
       });
     }
 
@@ -359,6 +360,14 @@ export const updateGuide = async (req, res) => {
       role,
     } = req.body;
 
+    // Validate guide ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid guide ID format",
+      });
+    }
+
     // Check if guide exists
     const guide = await Guide.findById(id);
     if (!guide) {
@@ -411,6 +420,17 @@ export const updateGuide = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: "trekAreas must be a non-empty array",
+        });
+      }
+
+      // Validate all trekAreas IDs are valid ObjectIds
+      const invalidIds = trekAreas.filter(
+        (areaId) => !mongoose.Types.ObjectId.isValid(areaId)
+      );
+      if (invalidIds.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid trailInfo ID format: ${invalidIds.join(", ")}`,
         });
       }
     }
@@ -469,47 +489,54 @@ export const updateGuide = async (req, res) => {
 
     // Handle trekAreas update separately to sync relationships
     if (trekAreas !== undefined) {
-      // Validate that all trail IDs exist
-      const validTrails = await Trail.find({
+      // Validate that all trailInfo IDs exist
+      const validTrailInfos = await TrailInfo.find({
         _id: { $in: trekAreas },
       });
 
-      if (validTrails.length !== trekAreas.length) {
-        const foundIds = validTrails.map((t) => t._id.toString());
+      if (validTrailInfos.length !== trekAreas.length) {
+        const foundIds = validTrailInfos.map((t) => t._id.toString());
         const invalidIds = trekAreas.filter(
           (id) => !foundIds.includes(id.toString())
         );
         return res.status(400).json({
           success: false,
-          message: `Invalid trail IDs: ${invalidIds.join(", ")}`,
+          message: `Invalid trailInfo IDs: ${invalidIds.join(", ")}`,
         });
       }
 
-      // Get old trail IDs for cleanup
-      const oldTrailIds = guide.trekAreas
-        ? guide.trekAreas.map((t) => t._id || t).filter(Boolean)
+      // Get old trailInfo IDs for cleanup (filter valid ObjectIds only)
+      const oldTrailInfoIds = guide.trekAreas
+        ? guide.trekAreas
+            .map((t) => t._id || t)
+            .filter((areaId) => areaId && mongoose.Types.ObjectId.isValid(areaId))
         : [];
 
-      // Remove guide from old trails
-      if (oldTrailIds.length > 0) {
-        await Trail.updateMany(
-          { _id: { $in: oldTrailIds } },
-          { $pull: { guides: id } }
-        );
+      // Remove guide from old trailInfos (only if they exist in TrailInfo collection)
+      if (oldTrailInfoIds.length > 0) {
+        try {
+          await TrailInfo.updateMany(
+            { _id: { $in: oldTrailInfoIds } },
+            { $pull: { guides: id } }
+          );
+        } catch (cleanupError) {
+          // Log but don't fail - old data might reference Trail instead of TrailInfo
+          console.warn("Cleanup warning (old trekAreas):", cleanupError.message);
+        }
       }
 
-      // Prepare new trails data with names
-      const trailsData = validTrails.map((trail) => ({
-        _id: trail._id,
-        name: trail.properties?.name || "Unnamed Trail",
+      // Prepare new trailInfo data with names
+      const trailsData = validTrailInfos.map((trailInfo) => ({
+        _id: trailInfo._id,
+        name: trailInfo.name || "Unnamed Trail",
       }));
 
-      // Set new trails with names
+      // Set new trailInfos with names
       updateData.trekAreas = trailsData;
 
-      // Add guide to new trails
+      // Add guide to new trailInfos
       if (trekAreas.length > 0) {
-        await Trail.updateMany(
+        await TrailInfo.updateMany(
           { _id: { $in: trekAreas } },
           { $addToSet: { guides: id } }
         );
@@ -536,15 +563,20 @@ export const updateGuide = async (req, res) => {
     if (error.name === "ValidationError") {
       return res.status(400).json({
         success: false,
-        message: "Validation error",
+        message: Object.values(error.errors)
+          .map((e) => e.message)
+          .join(", "),
         error: error.message,
       });
     }
 
     if (error.name === "CastError") {
+      // More specific error message based on the field
+      const field = error.path || "ID";
       return res.status(400).json({
         success: false,
-        message: "Invalid guide ID",
+        message: `Invalid ${field} format`,
+        error: error.message,
       });
     }
 
@@ -577,15 +609,15 @@ export const deleteGuide = async (req, res) => {
       });
     }
 
-    // Get trail IDs from embedded documents
-    const trailIds = guide.trekAreas
+    // Get trailInfo IDs from embedded documents
+    const trailInfoIds = guide.trekAreas
       ? guide.trekAreas.map((t) => t._id || t).filter(Boolean)
       : [];
 
-    // Remove guide from all trails
-    if (trailIds.length > 0) {
-      await Trail.updateMany(
-        { _id: { $in: trailIds } },
+    // Remove guide from all trailInfos
+    if (trailInfoIds.length > 0) {
+      await TrailInfo.updateMany(
+        { _id: { $in: trailInfoIds } },
         { $pull: { guides: id } }
       );
     }

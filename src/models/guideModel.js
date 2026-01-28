@@ -47,7 +47,7 @@ const guideSchema = new mongoose.Schema(
       {
         _id: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Trail",
+          ref: "TrailInfo",
           required: true,
         },
         name: {
@@ -112,30 +112,30 @@ guideSchema.methods.matchPassword = async function (enteredPassword) {
 guideSchema.index({ "trekAreas._id": 1 });
 
 // Static method to assign a trail to a guide (syncs both sides)
-guideSchema.statics.assignTrailToGuide = async function (guideId, trailId) {
+guideSchema.statics.assignTrailToGuide = async function (guideId, trailInfoId) {
   const Guide = this;
-  const Trail = mongoose.model("Trail");
+  const TrailInfo = mongoose.model("TrailInfo");
 
-  // Fetch trail to get name
-  const trail = await Trail.findById(trailId);
-  if (!trail) {
-    throw new Error("Trail not found");
+  // Fetch trailInfo to get name
+  const trailInfo = await TrailInfo.findById(trailInfoId);
+  if (!trailInfo) {
+    throw new Error("TrailInfo not found");
   }
 
-  const trailName = trail.properties?.name || "Unnamed Trail";
+  const trailName = trailInfo.name || "Unnamed Trail";
 
-  // Add trail to guide with name
+  // Add trailInfo to guide with name
   await Guide.findByIdAndUpdate(guideId, {
     $addToSet: {
       trekAreas: {
-        _id: trailId,
+        _id: trailInfoId,
         name: trailName,
       },
     },
   });
 
-  // Add guide to trail
-  await Trail.findByIdAndUpdate(trailId, {
+  // Add guide to trailInfo
+  await TrailInfo.findByIdAndUpdate(trailInfoId, {
     $addToSet: { guides: guideId },
   });
 
@@ -143,30 +143,30 @@ guideSchema.statics.assignTrailToGuide = async function (guideId, trailId) {
 };
 
 // Static method to assign multiple trails to a guide
-guideSchema.statics.assignTrailsToGuide = async function (guideId, trailIds) {
+guideSchema.statics.assignTrailsToGuide = async function (guideId, trailInfoIds) {
   const Guide = this;
-  const Trail = mongoose.model("Trail");
+  const TrailInfo = mongoose.model("TrailInfo");
 
-  // Fetch all trails to get names
-  const trails = await Trail.find({ _id: { $in: trailIds } });
-  if (trails.length !== trailIds.length) {
-    throw new Error("Some trails not found");
+  // Fetch all trailInfos to get names
+  const trailInfos = await TrailInfo.find({ _id: { $in: trailInfoIds } });
+  if (trailInfos.length !== trailInfoIds.length) {
+    throw new Error("Some trail infos not found");
   }
 
-  // Prepare trail data with names
-  const trailsData = trails.map((trail) => ({
-    _id: trail._id,
-    name: trail.properties?.name || "Unnamed Trail",
+  // Prepare trailInfo data with names
+  const trailsData = trailInfos.map((trailInfo) => ({
+    _id: trailInfo._id,
+    name: trailInfo.name || "Unnamed Trail",
   }));
 
-  // Add trails to guide with names
+  // Add trailInfos to guide with names
   await Guide.findByIdAndUpdate(guideId, {
     $addToSet: { trekAreas: { $each: trailsData } },
   });
 
-  // Add guide to all trails
-  await Trail.updateMany(
-    { _id: { $in: trailIds } },
+  // Add guide to all trailInfos
+  await TrailInfo.updateMany(
+    { _id: { $in: trailInfoIds } },
     { $addToSet: { guides: guideId } }
   );
 
@@ -174,17 +174,17 @@ guideSchema.statics.assignTrailsToGuide = async function (guideId, trailIds) {
 };
 
 // Static method to remove a trail from a guide (syncs both sides)
-guideSchema.statics.removeTrailFromGuide = async function (guideId, trailId) {
+guideSchema.statics.removeTrailFromGuide = async function (guideId, trailInfoId) {
   const Guide = this;
-  const Trail = mongoose.model("Trail");
+  const TrailInfo = mongoose.model("TrailInfo");
 
-  // Remove trail from guide (by _id field in embedded document)
+  // Remove trailInfo from guide (by _id field in embedded document)
   await Guide.findByIdAndUpdate(guideId, {
-    $pull: { trekAreas: { _id: trailId } },
+    $pull: { trekAreas: { _id: trailInfoId } },
   });
 
-  // Remove guide from trail
-  await Trail.findByIdAndUpdate(trailId, {
+  // Remove guide from trailInfo
+  await TrailInfo.findByIdAndUpdate(trailInfoId, {
     $pull: { guides: guideId },
   });
 
@@ -194,16 +194,19 @@ guideSchema.statics.removeTrailFromGuide = async function (guideId, trailId) {
 // Static method to remove all trails from a guide
 guideSchema.statics.removeAllTrailsFromGuide = async function (guideId) {
   const Guide = this;
-  const Trail = mongoose.model("Trail");
+  const TrailInfo = mongoose.model("TrailInfo");
 
   const guide = await Guide.findById(guideId);
   if (!guide || !guide.trekAreas || guide.trekAreas.length === 0) {
     return guide;
   }
 
-  // Remove guide from all trails
-  await Trail.updateMany(
-    { _id: { $in: guide.trekAreas } },
+  // Extract trailInfo IDs from trekAreas
+  const trailInfoIds = guide.trekAreas.map((area) => area._id);
+
+  // Remove guide from all trailInfos
+  await TrailInfo.updateMany(
+    { _id: { $in: trailInfoIds } },
     { $pull: { guides: guideId } }
   );
 

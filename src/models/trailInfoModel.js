@@ -131,6 +131,13 @@ const trailInfoSchema = new mongoose.Schema(
       ref: "Trail",
       required: false,
     },
+    // Many-to-many relationship with guides
+    guides: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Guide",
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -145,6 +152,7 @@ trailInfoSchema.index({ isFeatured: 1 });
 trailInfoSchema.index({ activityType: 1 });
 trailInfoSchema.index({ location: 1 });
 trailInfoSchema.index({ trailId: 1 });
+trailInfoSchema.index({ guides: 1 });
 
 const TrailInfo = mongoose.models.TrailInfo || mongoose.model("TrailInfo", trailInfoSchema);
 export default TrailInfo;
