@@ -14,7 +14,7 @@ const guideAvailabilitySchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["available", "not_available"],
+      enum: ["available", "not available"],
       default: "available",
     },
     note: {
