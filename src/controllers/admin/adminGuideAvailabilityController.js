@@ -31,6 +31,11 @@ function getDaysInRange(fromDate, toDate) {
   return days;
 }
 
+/** Check if a day (Date at midnight UTC) falls within a range doc */
+function dayInRange(dayStart, doc) {
+  return dayStart >= doc.startDate && dayStart <= doc.endDate;
+}
+
 /**
  * GET guide availability (calendar) for a date range.
  * Admin can view any guide's availability.
@@ -83,15 +88,22 @@ export const getGuideAvailability = async (req, res) => {
 
     const records = await GuideAvailability.find({
       guide: guideId,
-      date: { $gte: start, $lte: end },
-    }).lean();
+      startDate: { $lte: end },
+      endDate: { $gte: start },
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
 
+    const dateKeys = getDaysInRange(start, end);
     const statusByDate = {};
-    records.forEach((r) => {
-      statusByDate[formatDateKey(r.date)] = r.status;
-    });
+    for (const dateKey of dateKeys) {
+      const [y, m, d] = dateKey.split("-").map(Number);
+      const dayStart = new Date(Date.UTC(y, m - 1, d));
+      const covering = records.find((r) => dayInRange(dayStart, r));
+      statusByDate[dateKey] = covering ? covering.status : DEFAULT_STATUS;
+    }
 
-    const calendar = getDaysInRange(start, end).map((dateKey) => ({
+    const calendar = dateKeys.map((dateKey) => ({
       date: dateKey,
       status: statusByDate[dateKey] ?? DEFAULT_STATUS,
     }));
@@ -116,9 +128,10 @@ export const getGuideAvailability = async (req, res) => {
 /**
  * SET guide availability.
  * Admin can set any guide's availability.
+ * One document per range (or per single date, or per discrete date in "dates" array).
  * Body: single date  -> { date: "YYYY-MM-DD", status, note? }
- *       range       -> { startDate: "YYYY-MM-DD", endDate: "YYYY-MM-DD", status, note? }
- *       multiple    -> { dates: ["YYYY-MM-DD", ...], status, note? }
+ *       range        -> { startDate: "YYYY-MM-DD", endDate: "YYYY-MM-DD", status, note? }  -> ONE document
+ *       multiple     -> { dates: ["YYYY-MM-DD", ...], status, note? }
  */
 export const setGuideAvailability = async (req, res) => {
   try {
@@ -147,7 +160,8 @@ export const setGuideAvailability = async (req, res) => {
       });
     }
 
-    let dateKeys = [];
+    const payload = { status, ...(note != null && { note }) };
+    const ops = [];
 
     if (date) {
       const d = new Date(date);
@@ -157,7 +171,16 @@ export const setGuideAvailability = async (req, res) => {
           message: "Invalid date format. Use YYYY-MM-DD",
         });
       }
-      dateKeys.push(formatDateKey(d));
+      const startOfDay = toStartOfDayUTC(d);
+      ops.push({
+        filter: {
+          guide: new mongoose.Types.ObjectId(guideId),
+          startDate: startOfDay,
+          endDate: startOfDay,
+        },
+        startDate: startOfDay,
+        endDate: startOfDay,
+      });
     } else if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
@@ -175,7 +198,15 @@ export const setGuideAvailability = async (req, res) => {
           message: "startDate must be before or equal to endDate",
         });
       }
-      dateKeys = getDaysInRange(from, to);
+      ops.push({
+        filter: {
+          guide: new mongoose.Types.ObjectId(guideId),
+          startDate: from,
+          endDate: to,
+        },
+        startDate: from,
+        endDate: to,
+      });
     } else if (Array.isArray(dates) && dates.length > 0) {
       for (const dStr of dates) {
         const d = new Date(dStr);
@@ -185,7 +216,16 @@ export const setGuideAvailability = async (req, res) => {
             message: `Invalid date in array: ${dStr}. Use YYYY-MM-DD`,
           });
         }
-        dateKeys.push(formatDateKey(d));
+        const startOfDay = toStartOfDayUTC(d);
+        ops.push({
+          filter: {
+            guide: new mongoose.Types.ObjectId(guideId),
+            startDate: startOfDay,
+            endDate: startOfDay,
+          },
+          startDate: startOfDay,
+          endDate: startOfDay,
+        });
       }
     } else {
       return res.status(400).json({
@@ -195,26 +235,34 @@ export const setGuideAvailability = async (req, res) => {
       });
     }
 
-    const bulkOps = dateKeys.map((dateKey) => {
-      const [y, m, d] = dateKey.split("-").map(Number);
-      const dateObj = new Date(Date.UTC(y, m - 1, d));
-      return {
-        updateOne: {
-          filter: { guide: new mongoose.Types.ObjectId(guideId), date: dateObj },
-          update: { $set: { status, ...(note != null && { note }) } },
-          upsert: true,
+    for (const op of ops) {
+      await GuideAvailability.findOneAndUpdate(
+        op.filter,
+        {
+          $set: {
+            startDate: op.startDate,
+            endDate: op.endDate,
+            ...payload,
+          },
         },
-      };
-    });
+        { upsert: true, new: true, runValidators: true }
+      );
+    }
 
-    await GuideAvailability.bulkWrite(bulkOps);
+    const message =
+      ops.length === 1
+        ? "Availability updated (1 date range)"
+        : `Availability updated (${ops.length} date ranges)`;
 
     res.status(200).json({
       success: true,
-      message: "Availability updated",
+      message,
       guideId,
-      updated: dateKeys.length,
-      dates: dateKeys,
+      updated: ops.length,
+      dateRanges: ops.map((o) => ({
+        startDate: formatDateKey(o.startDate),
+        endDate: formatDateKey(o.endDate),
+      })),
     });
   } catch (error) {
     console.error("Set guide availability error:", error);

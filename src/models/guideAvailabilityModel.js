@@ -8,9 +8,13 @@ const guideAvailabilitySchema = new mongoose.Schema(
       ref: "Guide",
       required: [true, "Guide is required"],
     },
-    date: {
+    startDate: {
       type: Date,
-      required: [true, "Date is required"],
+      required: [true, "Start date is required"],
+    },
+    endDate: {
+      type: Date,
+      required: [true, "End date is required"],
     },
     status: {
       type: String,
@@ -26,20 +30,28 @@ const guideAvailabilitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Normalize date to start of day (UTC) before saving
+// Normalize startDate/endDate to start of day UTC before saving
 guideAvailabilitySchema.pre("save", function (next) {
-  if (this.isModified("date") && this.date) {
-    const d = new Date(this.date);
-    this.date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const norm = (d) =>
+    d
+      ? new Date(
+          Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+        )
+      : d;
+  if (this.isModified("startDate") && this.startDate) {
+    this.startDate = norm(new Date(this.startDate));
+  }
+  if (this.isModified("endDate") && this.endDate) {
+    this.endDate = norm(new Date(this.endDate));
   }
   next();
 });
 
-// Compound unique index: one entry per guide per day
-guideAvailabilitySchema.index({ guide: 1, date: 1 }, { unique: true });
-
-// Index for range queries (e.g. "availability for guide X from Feb 1 to Feb 28")
-guideAvailabilitySchema.index({ guide: 1, date: 1 });
+// One document per guide per date range (same range = update, not duplicate)
+guideAvailabilitySchema.index(
+  { guide: 1, startDate: 1, endDate: 1 },
+  { unique: true }
+);
 
 const GuideAvailability =
   mongoose.models.GuideAvailability ||
