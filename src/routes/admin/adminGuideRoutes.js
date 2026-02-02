@@ -10,6 +10,10 @@ import {
   removeTrailFromGuide,
   getGuideTrails,
 } from "../../controllers/admin/adminGuideController.js";
+import {
+  getGuideAvailability,
+  setGuideAvailability,
+} from "../../controllers/admin/adminGuideAvailabilityController.js";
 import { protect, adminOnly } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -25,6 +29,10 @@ router.post("/", createGuide);
 router.get("/:id/trails", getGuideTrails);
 router.post("/:guideId/trails/:trailId", assignTrailToGuide);
 router.delete("/:guideId/trails/:trailId", removeTrailFromGuide);
+
+// Guide availability (Admin Only) - Must be before /:id route
+router.get("/:id/availability", getGuideAvailability);
+router.put("/:id/availability", setGuideAvailability);
 
 // Single guide operations (must be after relationship routes)
 router.get("/:id", getGuideById);
