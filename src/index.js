@@ -48,15 +48,14 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Serve docs directory
-app.use('/docs', express.static(path.join(__dirname, '../docs')));
-
+// Root first: show "server is running" only (no old HTML)
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    res.type('html').send('<!DOCTYPE html><html><head><meta charset="utf-8"><title>YatraX Backend</title></head><body><p>The server is running.</p></body></html>');
 });
+
+// Docs and public static files (after / so root is never overridden)
+app.use('/docs', express.static(path.join(__dirname, '../docs')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/api-docs/native', (req, res) => {
     res.sendFile(path.join(__dirname, '../docs/native-api-swagger.html'));
