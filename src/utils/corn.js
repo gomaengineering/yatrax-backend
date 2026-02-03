@@ -5,7 +5,7 @@ const job = cron.CronJob.from({
   cronTime: "*/14 * * * *",
   onTick: function () {
     https
-      .get("https://yatrax-backend.onrender.com/", (res) => {
+      .get("https://yatrax-backend.neutrotex.com/", (res) => {
         if (res.statusCode === 200) console.log("GET request sent successfully");
         else console.log("GET request failed", res.statusCode);
       })

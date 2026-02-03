@@ -13,6 +13,7 @@ import {
   findTrailsIntersecting,
   getTrailGuides,
 } from "../../controllers/web/trailController.js";
+import { optionalAuth } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -27,8 +28,8 @@ router.post("/feature-collection", createTrailsFromFeatureCollection); // Import
 router.post("/", createTrail);
 router.get("/", getAllTrails);
 
-// Trail-Guide Relationship Operations (must be before /:id route)
-router.get("/:id/guides", getTrailGuides);
+// Trail-Guide Relationship Operations (must be before /:id route; contact info only when authenticated)
+router.get("/:id/guides", optionalAuth, getTrailGuides);
 
 // Single trail operations (must be after relationship routes)
 router.get("/:id", getTrailById);

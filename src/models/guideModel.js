@@ -86,6 +86,16 @@ const guideSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    whatsapp: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   { timestamps: true }
 );
