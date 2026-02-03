@@ -278,7 +278,15 @@ export const getAllGuides = async (req, res) => {
       .skip(skip);
 
     // trekAreas already contains _id and name in the database
-    const transformedGuides = guides.map(guide => guide.toObject());
+    const transformedGuides = guides.map((guide) => {
+      const obj = guide.toObject();
+      if (!req.user) {
+        delete obj.email;
+        delete obj.phone;
+        delete obj.whatsapp;
+      }
+      return obj;
+    });
 
     const total = await Guide.countDocuments(query);
 
@@ -317,6 +325,11 @@ export const getGuideById = async (req, res) => {
 
     // trekAreas already contains _id and name in the database
     const guideObj = guide.toObject();
+    if (!req.user) {
+      delete guideObj.email;
+      delete guideObj.phone;
+      delete guideObj.whatsapp;
+    }
 
     res.status(200).json({
       success: true,
