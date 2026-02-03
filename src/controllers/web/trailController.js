@@ -534,6 +534,17 @@ export const getTrailGuides = async (req, res) => {
       });
     }
 
+    const guides = trail.guides || [];
+    const guidesForResponse = req.user
+      ? guides
+      : guides.map((g) => {
+          const obj = typeof g.toObject === "function" ? g.toObject() : { ...g };
+          delete obj.email;
+          delete obj.phone;
+          delete obj.whatsapp;
+          return obj;
+        });
+
     res.status(200).json({
       success: true,
       trail: {
@@ -541,8 +552,8 @@ export const getTrailGuides = async (req, res) => {
         type: trail.type,
         properties: trail.properties,
       },
-      guides: trail.guides || [],
-      count: trail.guides ? trail.guides.length : 0,
+      guides: guidesForResponse,
+      count: guides.length,
     });
   } catch (error) {
     console.error("Get trail guides error:", error);

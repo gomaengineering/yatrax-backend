@@ -11,19 +11,19 @@ import {
   getGuideAvailability,
   setGuideAvailability,
 } from "../../controllers/web/guideAvailabilityController.js";
-import { protect, isResourceOwner } from "../../middleware/authMiddleware.js";
+import { protect, isResourceOwner, optionalAuth } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 // CRUD Operations
 router.post("/", createGuide);
-router.get("/", getAllGuides);
+router.get("/", optionalAuth, getAllGuides);
 
 // Guide availability (authenticated users only) - must be before /:id
 router.get("/:id/availability", protect, getGuideAvailability);
 router.put("/:id/availability", protect, isResourceOwner("guide"), setGuideAvailability);
 
-router.get("/:id", getGuideById);
+router.get("/:id", optionalAuth, getGuideById);
 router.put("/:id", protect, isResourceOwner("guide"), updateGuide);
 router.delete("/:id", protect, isResourceOwner("guide"), deleteGuide);
 

@@ -13,12 +13,14 @@ import {
 } from "../../controllers/native/nativeGuideAvailabilityController.js";
 import { validateQuery, validateParams, validateBody } from "../../middleware/nativeValidator.js";
 import { nativeProtect } from "../../middleware/nativeAuthMiddleware.js";
+import { optionalAuth } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Get all guides with pagination and filtering (public endpoint - no authentication required)
+// Get all guides with pagination and filtering (contact info only when authenticated)
 router.get(
   "/",
+  optionalAuth,
   validateQuery({
     page: {
       required: false,
@@ -131,9 +133,10 @@ router.put(
   setGuideAvailability
 );
 
-// Get guide by ID (detailed view) (public)
+// Get guide by ID (detailed view; contact info only when authenticated)
 router.get(
   "/:id",
+  optionalAuth,
   validateParams({
     id: {
       required: true,

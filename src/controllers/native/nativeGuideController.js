@@ -77,31 +77,31 @@ export const getAllGuides = async (req, res) => {
       sortObj = { firstName: 1, lastName: 1 }; // Alphabetical
     }
 
-    // Execute query with pagination
+    // Execute query with pagination (include email, phone, whatsapp for conditional response)
     const [guides, total] = await Promise.all([
       Guide.find(query)
-        .select("-password -email -TBNumber -role -__v")
+        .select("-password -TBNumber -role -__v")
         .sort(sortObj)
         .skip(skip)
         .limit(limitNum)
-        .lean(), // Use lean() for better performance
+        .lean(),
       Guide.countDocuments(query),
     ]);
 
-    // Transform guides for list view (minimal fields)
+    const isAuthenticated = !!req.user;
+
+    // Transform guides for list view (minimal fields; contact only when authenticated)
     const transformedGuides = guides.map((guide) => {
-      // Truncate description to 200 characters
       const truncatedDescription =
         guide.description && guide.description.length > 200
           ? guide.description.substring(0, 200) + "..."
           : guide.description;
 
-      // Limit certifications to first 3
       const limitedCertifications = guide.certifications
         ? guide.certifications.slice(0, 3)
         : [];
 
-      return {
+      const item = {
         id: guide._id.toString(),
         name: `${guide.firstName} ${guide.lastName}`,
         description: truncatedDescription,
@@ -112,6 +112,12 @@ export const getAllGuides = async (req, res) => {
         certifications: limitedCertifications,
         education: guide.education,
       };
+      if (isAuthenticated) {
+        item.email = guide.email;
+        item.phone = guide.phone ?? null;
+        item.whatsapp = guide.whatsapp ?? null;
+      }
+      return item;
     });
 
     // Calculate pagination metadata
@@ -155,9 +161,9 @@ export const getGuideById = async (req, res) => {
       });
     }
 
-    // Find guide (exclude sensitive fields)
+    // Find guide (include email, phone, whatsapp for conditional response)
     const guide = await Guide.findById(id)
-      .select("-password -email -TBNumber -role -__v")
+      .select("-password -TBNumber -role -__v")
       .lean();
 
     if (!guide) {
@@ -171,7 +177,9 @@ export const getGuideById = async (req, res) => {
       });
     }
 
-    // Transform guide for detail view (full fields)
+    const isAuthenticated = !!req.user;
+
+    // Transform guide for detail view (contact info only when authenticated)
     const transformedGuide = {
       id: guide._id.toString(),
       firstName: guide.firstName,
@@ -185,6 +193,11 @@ export const getGuideById = async (req, res) => {
       ratePerDay: guide.ratePerDay,
       certifications: guide.certifications || [],
     };
+    if (isAuthenticated) {
+      transformedGuide.email = guide.email;
+      transformedGuide.phone = guide.phone ?? null;
+      transformedGuide.whatsapp = guide.whatsapp ?? null;
+    }
 
     res.status(200).json({
       success: true,
