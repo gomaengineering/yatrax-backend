@@ -32,6 +32,8 @@ tags:
     description: CRUD operations for user accounts
   - name: Guide Management
     description: CRUD operations for guide accounts
+  - name: Guide Availability
+    description: Get and set guide availability by date range (admin only)
   - name: Trail Management
     description: CRUD operations for trail GeoJSON data
   - name: Trail Info Management
@@ -47,7 +49,7 @@ paths:
       summary: Admin login
       description: |
         Authenticate admin with email and password. Admin can be from User model or Guide model.
-        Use `userType` parameter to specify which model to check first.
+        If `userType` is not provided, the backend checks User model first, then Guide model.
       operationId: loginAdmin
       security: []
       requestBody:
@@ -77,11 +79,7 @@ paths:
                   type: string
                   enum: ["user", "guide"]
                   example: "user"
-                  description: |
-                    Optional. Specify which model to check first.
-                    - "user": Check User model first, then Guide model
-                    - "guide": Check Guide model first, then User model
-                    If not provided, defaults to checking User model first
+                  description: Optional. If not provided, backend checks User first then Guide.
       responses:
         '200':
           description: Login successful
@@ -929,6 +927,206 @@ paths:
                     example: "Guide deleted successfully"
         '400':
           description: Cannot delete your own admin account or invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides/{id}/availability:
+    get:
+      tags:
+        - Guide Availability
+      summary: Get guide availability
+      description: Get guide availability calendar for a date range. Admin only. Requires authentication.
+      operationId: getGuideAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+          description: Start date (YYYY-MM-DD)
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+          description: End date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Availability calendar retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  guideId:
+                    type: string
+                  from:
+                    type: string
+                    example: "2025-01-01"
+                  to:
+                    type: string
+                    example: "2025-01-31"
+                  calendar:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                        status:
+                          type: string
+                          enum: [available, "not available"]
+        '400':
+          description: Invalid guide ID or date parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Guide Availability
+      summary: Set guide availability
+      description: Set any guide's availability. Admin only. One document per date range (single date, startDate/endDate, or dates array).
+      operationId: setGuideAvailability
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                date:
+                  type: string
+                  format: date
+                  description: Single date (use one of date, startDate+endDate, or dates)
+                startDate:
+                  type: string
+                  format: date
+                  description: Range start (with endDate)
+                endDate:
+                  type: string
+                  format: date
+                  description: Range end (with startDate)
+                dates:
+                  type: array
+                  items:
+                    type: string
+                    format: date
+                  description: Multiple discrete dates
+                status:
+                  type: string
+                  enum: [available, "not available"]
+                  example: "available"
+                note:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Availability updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                  guideId:
+                    type: string
+                  updated:
+                    type: integer
+                  dateRanges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        startDate:
+                          type: string
+                        endDate:
+                          type: string
+        '400':
+          description: Validation error or invalid dates
           content:
             application/json:
               schema:

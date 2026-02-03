@@ -7,6 +7,10 @@ import {
   updateGuide,
   deleteGuide,
 } from "../../controllers/native/nativeGuideController.js";
+import {
+  getGuideAvailability,
+  setGuideAvailability,
+} from "../../controllers/native/nativeGuideAvailabilityController.js";
 import { validateQuery, validateParams, validateBody } from "../../middleware/nativeValidator.js";
 import { nativeProtect } from "../../middleware/nativeAuthMiddleware.js";
 
@@ -56,6 +60,75 @@ router.get(
     },
   }),
   getAllGuides
+);
+
+// Get guide availability (date range) – requires authentication
+router.get(
+  "/:id/availability",
+  nativeProtect,
+  validateParams({
+    id: {
+      required: true,
+      type: "string",
+      isObjectId: true,
+    },
+  }),
+  validateQuery({
+    from: {
+      required: true,
+      type: "string",
+    },
+    to: {
+      required: true,
+      type: "string",
+    },
+  }),
+  getGuideAvailability
+);
+
+// Set guide availability – requires authentication
+router.put(
+  "/:id/availability",
+  nativeProtect,
+  validateParams({
+    id: {
+      required: true,
+      type: "string",
+      isObjectId: true,
+    },
+  }),
+  validateBody({
+    date: {
+      required: false,
+      type: "string",
+    },
+    startDate: {
+      required: false,
+      type: "string",
+    },
+    endDate: {
+      required: false,
+      type: "string",
+    },
+    dates: {
+      required: false,
+      type: "array",
+      items: {
+        type: "string",
+      },
+    },
+    status: {
+      required: true,
+      type: "string",
+      enum: ["available", "not available"],
+    },
+    note: {
+      required: false,
+      type: "string",
+    },
+    _whitelist: true,
+  }),
+  setGuideAvailability
 );
 
 // Get guide by ID (detailed view) (public)

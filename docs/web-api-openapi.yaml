@@ -29,6 +29,8 @@ tags:
     description: Guide registration and authentication
   - name: Guides
     description: Guide CRUD operations
+  - name: Guide Availability
+    description: Get and set guide availability by date range (authenticated)
   - name: Trails
     description: Trail CRUD operations and geospatial queries
   - name: Trail Info
@@ -999,6 +1001,216 @@ paths:
                       $ref: '#/components/schemas/GeoJSONFeature'
         '400':
           description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /guides/{id}/availability:
+    get:
+      tags:
+        - Guide Availability
+      summary: Get guide availability
+      description: |
+        Get guide availability calendar for a date range. Requires authentication.
+        Returns each day in range with status (available / not available). Days without a record default to "available".
+      operationId: getGuideAvailability
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+          description: Start date (YYYY-MM-DD)
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+          description: End date (YYYY-MM-DD)
+      responses:
+        '200':
+          description: Availability calendar retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  guideId:
+                    type: string
+                    example: "507f1f77bcf86cd799439021"
+                  from:
+                    type: string
+                    example: "2025-01-01"
+                  to:
+                    type: string
+                    example: "2025-01-31"
+                  calendar:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          example: "2025-01-01"
+                        status:
+                          type: string
+                          enum: [available, "not available"]
+                          example: "available"
+        '400':
+          description: Invalid guide ID or date parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Guide Availability
+      summary: Set guide availability
+      description: |
+        Set guide availability. Requires authentication. Only the guide who owns this ID can set (web API).
+        One document per date range. Provide one of: single date, date range (startDate/endDate), or multiple dates (dates array).
+      operationId: setGuideAvailability
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+          description: Guide ID (MongoDB ObjectId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2025-02-01"
+                  description: Single date (use one of date, startDate+endDate, or dates)
+                startDate:
+                  type: string
+                  format: date
+                  example: "2025-02-01"
+                  description: Range start (with endDate)
+                endDate:
+                  type: string
+                  format: date
+                  example: "2025-02-10"
+                  description: Range end (with startDate)
+                dates:
+                  type: array
+                  items:
+                    type: string
+                    format: date
+                  example: ["2025-02-01", "2025-02-05", "2025-02-10"]
+                  description: Multiple discrete dates
+                status:
+                  type: string
+                  enum: [available, "not available"]
+                  example: "available"
+                note:
+                  type: string
+                  nullable: true
+                  example: "On leave"
+      responses:
+        '200':
+          description: Availability updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Availability updated (1 date range)"
+                  guideId:
+                    type: string
+                  updated:
+                    type: integer
+                    example: 1
+                  dateRanges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        startDate:
+                          type: string
+                          example: "2025-02-01"
+                        endDate:
+                          type: string
+                          example: "2025-02-10"
+        '400':
+          description: Validation error or invalid dates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (only the guide can set their own availability)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Guide not found
           content:
             application/json:
               schema:
