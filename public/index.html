@@ -670,8 +670,9 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Main Application Script -->
     <script>
+        const PORT = 3001;
         let GOOGLE_CLIENT_ID = '';
-        let API_BASE_URL = 'http://localhost:8000';
+        let API_BASE_URL = `http://localhost:${PORT}`;
         let map = null;
         let geoJsonLayer = null;
         let trailListComponent = null;
