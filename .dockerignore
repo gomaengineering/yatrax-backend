@@ -44,3 +44,7 @@ docker-compose*
 
 # Frontend test (from .gitignore)
 frontend-test
+
+
+# Example templates
+nativeErrors.example
