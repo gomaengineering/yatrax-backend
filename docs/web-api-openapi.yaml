@@ -17,8 +17,10 @@ info:
     email: support@yatrax.com
 
 servers:
+  - url: http://localhost:3001/api/web
+    description: Development (Docker)
   - url: http://localhost:8000/api/web
-    description: Development server
+    description: Development (npm start)
   - url: https://api.yatrax.com/api/web
     description: Production server
 
@@ -589,12 +591,29 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  count:
-                    type: integer
-                  trails:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/GeoJSONFeature'
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      trails:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GeoJSONFeature'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 100
+                          total:
+                            type: integer
+                            example: 42
+                          pages:
+                            type: integer
+                            example: 1
         '500':
           description: Server error
           content:
@@ -1464,7 +1483,10 @@ paths:
       tags:
         - Guides
       summary: Get all guides
-      description: Get all guides with pagination, filtering, and search
+      description: |
+        Get all guides with pagination, filtering, and search.
+        Optional authentication: if a valid Bearer token is sent, the response includes
+        contact fields (email, phone, whatsapp) for each guide; otherwise those fields are omitted.
       operationId: getAllGuides
       security: []
       parameters:
@@ -1577,7 +1599,10 @@ paths:
       tags:
         - Guides
       summary: Get guide by ID
-      description: Get a specific guide by its ID
+      description: |
+        Get a specific guide by its ID.
+        Optional authentication: if a valid Bearer token is sent, the response includes
+        email, phone, and whatsapp; otherwise those fields are omitted.
       operationId: getGuideById
       security: []
       parameters:
@@ -1898,6 +1923,14 @@ components:
           nullable: true
           description: Guide profile photo URL (Cloudinary)
           example: "https://res.cloudinary.com/example/image/upload/v1234567890/guides/photo.jpg"
+        phone:
+          type: string
+          nullable: true
+          description: Present only when request includes valid Bearer token.
+        whatsapp:
+          type: string
+          nullable: true
+          description: Present only when request includes valid Bearer token.
         createdAt:
           type: string
           format: date-time
