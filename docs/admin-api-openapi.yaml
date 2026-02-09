@@ -20,8 +20,10 @@ info:
     email: support@yatrax.com
 
 servers:
+  - url: http://localhost:3001/api/admin
+    description: Development (Docker)
   - url: http://localhost:8000/api/admin
-    description: Development server
+    description: Development (npm start)
   - url: https://api.yatrax.com/api/admin
     description: Production server
 
