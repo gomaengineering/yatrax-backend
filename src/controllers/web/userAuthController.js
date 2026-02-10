@@ -150,10 +150,9 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// 🔐 GOOGLE LOGIN
+// 🔐 GOOGLE LOGIN (accepts idToken or code+redirect_uri for OAuth2 popup flow; avoids FedCM)
 export const googleLogin = async (req, res) => {
   try {
-    // Check if req.body exists
     if (!req.body) {
       return res.status(400).json({ 
         success: false, 
@@ -161,12 +160,34 @@ export const googleLogin = async (req, res) => {
       });
     }
 
-    const { idToken } = req.body;
+    const { idToken: idTokenFromBody, code, redirect_uri } = req.body;
+    let idToken = idTokenFromBody;
+
+    // If authorization code is provided (OAuth2 popup flow; avoids FedCM), exchange for tokens
+    // Backend needs GOOGLE_CLIENT_SECRET and oauth2Client created with it for getToken to work
+    if (code && redirect_uri) {
+      try {
+        const { tokens } = await oauth2Client.getToken({ code, redirect_uri });
+        if (!tokens?.id_token) {
+          return res.status(400).json({
+            success: false,
+            message: "No ID token in Google response. Ensure openid scope is requested.",
+          });
+        }
+        idToken = tokens.id_token;
+      } catch (exchangeErr) {
+        console.error("Google code exchange error:", exchangeErr);
+        return res.status(401).json({
+          success: false,
+          message: "Google sign-in failed. Try again or use email/password.",
+        });
+      }
+    }
 
     if (!idToken) {
       return res.status(400).json({ 
         success: false, 
-        message: "Google ID token is required" 
+        message: "Google ID token or authorization code is required" 
       });
     }
 
@@ -257,4 +278,3 @@ export const googleLogin = async (req, res) => {
     });
   }
 };
-
