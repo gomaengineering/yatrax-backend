@@ -77,6 +77,7 @@ export const registerUser = async (req, res) => {
         country: newUser.country,
         role: newUser.role,
         subscription: newUser.subscription,
+        profilePicture: newUser.profilePicture,
       },
     });
   } catch (error) {
@@ -142,6 +143,7 @@ export const loginUser = async (req, res) => {
         country: user.country,
         role: user.role,
         subscription: user.subscription,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (error) {
@@ -227,20 +229,27 @@ export const googleLogin = async (req, res) => {
         // country is optional - not provided by Google OAuth
         role: "user",
         subscription: "free",
+        profilePicture: picture || undefined,
       });
     } else {
       // If user exists:
       // - If they have a password, they registered with email/password, so keep authProvider as 'local'
       //   (they can use both methods - email/password and Google)
       // - If they don't have a password, they're OAuth-only, so set/update authProvider to 'google'
+      let needsSave = false;
       if (!user.password) {
         // User has no password, so they're OAuth-only
         if (!user.authProvider || user.authProvider !== 'google') {
           user.authProvider = 'google';
-          await user.save();
+          needsSave = true;
         }
       }
-      // If user has password, don't change their authProvider (they can use both methods)
+      // Update profile picture from Google when we have a picture (keeps it current)
+      if (picture && user.profilePicture !== picture) {
+        user.profilePicture = picture;
+        needsSave = true;
+      }
+      if (needsSave) await user.save();
     }
 
     // Generate JWT token
@@ -258,6 +267,7 @@ export const googleLogin = async (req, res) => {
         country: user.country,
         role: user.role,
         subscription: user.subscription,
+        profilePicture: user.profilePicture,
       },
     });
   } catch (error) {
