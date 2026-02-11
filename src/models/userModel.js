@@ -50,6 +50,10 @@ const userSchema = new mongoose.Schema(
       enum: ["free", "premium"],
       default: "free",
     },
+    profilePicture: {
+      type: String,
+      trim: true,
+    },
 
   },
   { timestamps: true }
