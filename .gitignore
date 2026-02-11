@@ -139,3 +139,4 @@ dist
 .svelte-kit
 
 /frontend-test
+.cursor
