@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import User from "../../models/userModel.js";
 import generateToken from "../../utils/generateToken.js";
 import { oauth2Client } from "../../utils/googleConfig.js";
+import { sendPasswordResetEmail } from "../../utils/resend.js";
 
 // 🔑 GET GOOGLE CLIENT ID (Public endpoint for frontend)
 export const getGoogleClientId = async (req, res) => {
@@ -285,6 +287,170 @@ export const googleLogin = async (req, res) => {
       success: false,
       message: "Internal Server Error",
       error: error.message 
+    });
+  }
+};
+
+const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+
+function hashToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+// FORGOT PASSWORD – request a password reset email
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      "+password +resetPasswordToken +resetPasswordExpires"
+    );
+
+    // Same response whether the account exists or not (prevents email enumeration)
+    const successMessage =
+      "If an account exists with this email, you will receive a password reset link shortly.";
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: successMessage,
+      });
+    }
+
+    // Only send reset for accounts that can have a password (local or hybrid)
+    if (user.authProvider === "google" && !user.password) {
+      return res.status(200).json({
+        success: true,
+        message: successMessage,
+      });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = hashToken(rawToken);
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
+    await user.save({ validateBeforeSave: false });
+
+    const baseUrl =
+      process.env.FRONTEND_URL || process.env.PASSWORD_RESET_BASE_URL || "";
+    const resetPath = "/reset-password";
+    const resetUrl = baseUrl
+      ? `${baseUrl.replace(/\/$/, "")}${resetPath}?token=${rawToken}`
+      : "";
+
+    if (!resetUrl) {
+      console.error(
+        "Forgot password: FRONTEND_URL or PASSWORD_RESET_BASE_URL is not set. Reset link not sent."
+      );
+      return res.status(200).json({
+        success: true,
+        message: successMessage,
+      });
+    }
+
+    const { success, error } = await sendPasswordResetEmail(
+      user.email,
+      resetUrl,
+      user.firstName
+    );
+
+    if (!success) {
+      console.error("Forgot password: failed to send email", error);
+      // Do not reveal send failure to client; clear token so user can try again
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: successMessage,
+    });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again later.",
+    });
+  }
+};
+
+// FORGOT PASSWORD (complete) – set new password using token from the email link
+export const completeForgotPassword = async (req, res) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (!token || typeof token !== "string" || !token.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Token is required (from the email link)",
+      });
+    }
+
+    if (!newPassword || typeof newPassword !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "New password is required",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    const hashedToken = hashToken(token.trim());
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: new Date() },
+    }).select("+password +resetPasswordToken +resetPasswordExpires");
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired link. Please request a new forgot-password email.",
+      });
+    }
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been updated. You can now log in with your new password.",
+    });
+  } catch (err) {
+    console.error("Complete forgot password error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again later.",
     });
   }
 };

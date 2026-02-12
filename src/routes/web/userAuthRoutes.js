@@ -1,12 +1,21 @@
 import express from "express";
-import { googleLogin, loginUser, registerUser, getGoogleClientId } from "../../controllers/web/userAuthController.js";
+import {
+  getGoogleClientId,
+  googleLogin,
+  loginUser,
+  registerUser,
+  forgotPassword,
+  completeForgotPassword,
+} from "../../controllers/web/userAuthController.js";
 
 const router = express.Router();
 
-router.get("/google-client-id", getGoogleClientId); // Public endpoint to get Google Client ID
+router.get("/google-client-id", getGoogleClientId);
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-router.post("/google-login", googleLogin); // Google login route
+router.post("/google-login", googleLogin);
+router.post("/forgot-password", forgotPassword);
+router.post("/forgot-password/complete", completeForgotPassword);
 
 export default router;
 
