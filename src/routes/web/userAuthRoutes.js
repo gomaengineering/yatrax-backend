@@ -5,7 +5,7 @@ import {
   loginUser,
   registerUser,
   forgotPassword,
-  resetPassword,
+  completeForgotPassword,
 } from "../../controllers/web/userAuthController.js";
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/google-login", googleLogin);
 router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+router.post("/forgot-password/complete", completeForgotPassword);
 
 export default router;
 

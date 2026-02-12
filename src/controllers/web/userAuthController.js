@@ -391,15 +391,15 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// RESET PASSWORD – set new password using token from email
-export const resetPassword = async (req, res) => {
+// FORGOT PASSWORD (complete) – set new password using token from the email link
+export const completeForgotPassword = async (req, res) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
 
     if (!token || typeof token !== "string" || !token.trim()) {
       return res.status(400).json({
         success: false,
-        message: "Reset token is required",
+        message: "Token is required (from the email link)",
       });
     }
 
@@ -433,7 +433,7 @@ export const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired reset link. Please request a new password reset.",
+        message: "Invalid or expired link. Please request a new forgot-password email.",
       });
     }
 
@@ -444,10 +444,10 @@ export const resetPassword = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Password has been reset successfully. You can now log in with your new password.",
+      message: "Password has been updated. You can now log in with your new password.",
     });
   } catch (err) {
-    console.error("Reset password error:", err);
+    console.error("Complete forgot password error:", err);
     return res.status(500).json({
       success: false,
       message: "An error occurred. Please try again later.",
