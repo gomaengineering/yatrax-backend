@@ -31,29 +31,40 @@ export async function sendPasswordResetEmail(to, resetUrl, userFirstName) {
 
   const firstName = userFirstName || "there";
   const subject = "Reset your YatraX password";
+  // Brand colors: dark teal #005147, orange #e55100 (match frontend/logo)
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset your password</title>
+  <title>Reset your password – YatraX</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f5;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f4f4f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #e8f0ef;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #e8f0ef;">
     <tr>
       <td align="center" style="padding: 40px 20px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 480px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,81,71,0.12); border-top: 4px solid #005147;">
           <tr>
-            <td style="padding: 40px 32px;">
-              <h1 style="margin: 0 0 24px; font-size: 24px; font-weight: 600; color: #18181b;">Reset your password</h1>
-              <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; color: #3f3f46;">Hi ${escapeHtml(firstName)},</p>
-              <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; color: #3f3f46;">We received a request to reset the password for your YatraX account. Click the button below to choose a new password.</p>
+            <td style="padding: 32px 32px 24px; border-bottom: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 22px; font-weight: 700; color: #005147; letter-spacing: -0.02em;">Yatra<span style="color: #e55100">X</span></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px;">
+              <h1 style="margin: 0 0 24px; font-size: 22px; font-weight: 600; color: #005147;">Reset your password</h1>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; color: #374151;">Hi ${escapeHtml(firstName)},</p>
+              <p style="margin: 0 0 24px; font-size: 16px; line-height: 24px; color: #374151;">We received a request to reset the password for your YatraX account. Click the button below to choose a new password.</p>
               <p style="margin: 0 0 24px;">
-                <a href="${escapeHtml(resetUrl)}" style="display: inline-block; padding: 12px 24px; font-size: 16px; font-weight: 500; color: #ffffff; background-color: #18181b; text-decoration: none; border-radius: 6px;">Reset password</a>
+                <a href="${escapeHtml(resetUrl)}" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; background-color: #e55100; text-decoration: none; border-radius: 8px;">Reset password</a>
               </p>
-              <p style="margin: 0 0 8px; font-size: 14px; line-height: 20px; color: #71717a;">If you didn't request this, you can safely ignore this email.</p>
-              <p style="margin: 0; font-size: 14px; line-height: 20px; color: #71717a;">This link expires in 1 hour.</p>
+              <p style="margin: 0 0 8px; font-size: 14px; line-height: 20px; color: #6b7280;">If you didn't request this, you can safely ignore this email.</p>
+              <p style="margin: 0; font-size: 14px; line-height: 20px; color: #6b7280;">This link expires in 1 hour.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 16px 32px 24px; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; font-size: 18px; font-weight:600 line-height: 18px; color: #005147; opacity: 0.85;">Yatra<span style="color: #e55100">X</span> - Serving The <span style="color: #e55100">Nepali Experience</span></p>
             </td>
           </tr>
         </table>
