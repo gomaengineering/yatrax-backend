@@ -57,4 +57,33 @@ const GuideAvailability =
   mongoose.models.GuideAvailability ||
   mongoose.model("GuideAvailability", guideAvailabilitySchema);
 
+// Drop old index if it exists (migration helper - runs once when model is first accessed)
+let indexCleanupDone = false;
+const cleanupOldIndex = async () => {
+  if (indexCleanupDone) return;
+  try {
+    const indexes = await GuideAvailability.collection.getIndexes();
+    if (indexes.guide_1_date_1) {
+      console.log('Dropping old index: guide_1_date_1');
+      await GuideAvailability.collection.dropIndex('guide_1_date_1');
+      console.log('Successfully dropped old index');
+    }
+    indexCleanupDone = true;
+  } catch (err) {
+    if (err.code === 27 || err.message?.includes('not found')) {
+      // Index doesn't exist, that's fine
+      indexCleanupDone = true;
+    } else {
+      console.error('Error checking/dropping old index:', err.message);
+    }
+  }
+};
+
+// Run cleanup when connection is ready
+if (mongoose.connection.readyState === 1) {
+  cleanupOldIndex();
+} else {
+  mongoose.connection.once('connected', cleanupOldIndex);
+}
+
 export default GuideAvailability;

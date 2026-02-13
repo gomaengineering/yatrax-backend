@@ -267,6 +267,16 @@ export const setGuideAvailability = async (req, res) => {
     });
   } catch (error) {
     console.error("Set guide availability error:", error);
+    
+    // Handle duplicate key error related to old index
+    if (error.code === 11000 && error.keyPattern?.date) {
+      return res.status(500).json({
+        success: false,
+        message: "Database index mismatch. Please drop the old 'guide_1_date_1' index from the guideavailabilities collection.",
+        error: "Old index 'guide_1_date_1' exists but schema uses 'startDate' and 'endDate'. Run: db.guideavailabilities.dropIndex('guide_1_date_1')",
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: "Server error",
