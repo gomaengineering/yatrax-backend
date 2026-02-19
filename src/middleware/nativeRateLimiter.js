@@ -97,7 +97,7 @@ const createRateLimiter = (options) => {
  */
 export const nativeRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  max: 250, // Limit each IP to 250 requests per window
   errorCode: "RATE_LIMIT_EXCEEDED",
   errorMessage: "Too many requests from this IP, please try again later.",
 });
@@ -108,7 +108,7 @@ export const nativeRateLimiter = createRateLimiter({
  */
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each identifier to 5 login attempts per window
+  max: 50, // Limit each identifier to 50 login attempts per window
   keyGenerator: (req) => {
     // Use email from body if available for more specific limiting
     const identifier = req.body?.email || req.ip || req.connection.remoteAddress || "unknown";
