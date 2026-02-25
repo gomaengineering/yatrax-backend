@@ -77,10 +77,10 @@ export const getAllGuides = async (req, res) => {
       sortObj = { firstName: 1, lastName: 1 }; // Alphabetical
     }
 
-    // Execute query with pagination (include email, phone, whatsapp for conditional response)
+    // Execute query with pagination (match web: full guide docs, contact only when authenticated)
     const [guides, total] = await Promise.all([
       Guide.find(query)
-        .select("-password -TBNumber -role -__v")
+        .select("-password")
         .sort(sortObj)
         .skip(skip)
         .limit(limitNum)
@@ -88,52 +88,26 @@ export const getAllGuides = async (req, res) => {
       Guide.countDocuments(query),
     ]);
 
-    const isAuthenticated = !!req.user;
-
-    // Transform guides for list view (minimal fields; contact only when authenticated)
+    // Same response shape as web: full guide objects, strip contact if not authenticated
     const transformedGuides = guides.map((guide) => {
-      const truncatedDescription =
-        guide.description && guide.description.length > 200
-          ? guide.description.substring(0, 200) + "..."
-          : guide.description;
-
-      const limitedCertifications = guide.certifications
-        ? guide.certifications.slice(0, 3)
-        : [];
-
-      const item = {
-        id: guide._id.toString(),
-        name: `${guide.firstName} ${guide.lastName}`,
-        description: truncatedDescription,
-        trekAreas: guide.trekAreas || [],
-        experience: guide.experience,
-        languages: guide.languages || [],
-        ratePerDay: guide.ratePerDay,
-        certifications: limitedCertifications,
-        education: guide.education,
-      };
-      if (isAuthenticated) {
-        item.email = guide.email;
-        item.phone = guide.phone ?? null;
-        item.whatsapp = guide.whatsapp ?? null;
+      const obj = { ...guide };
+      if (!req.user) {
+        delete obj.email;
+        delete obj.phone;
+        delete obj.whatsapp;
       }
-      return item;
+      return obj;
     });
 
-    // Calculate pagination metadata
     const pages = Math.ceil(total / limitNum);
 
     res.status(200).json({
       success: true,
-      data: {
-        guides: transformedGuides,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages,
-        },
-      },
+      count: guides.length,
+      total,
+      page: pageNum,
+      pages,
+      guides: transformedGuides,
     });
   } catch (error) {
     console.error("Get all guides error:", error);
@@ -161,9 +135,9 @@ export const getGuideById = async (req, res) => {
       });
     }
 
-    // Find guide (include email, phone, whatsapp for conditional response)
+    // Find guide (match web: full document, contact only when authenticated)
     const guide = await Guide.findById(id)
-      .select("-password -TBNumber -role -__v")
+      .select("-password")
       .lean();
 
     if (!guide) {
@@ -177,31 +151,16 @@ export const getGuideById = async (req, res) => {
       });
     }
 
-    const isAuthenticated = !!req.user;
-
-    // Transform guide for detail view (contact info only when authenticated)
-    const transformedGuide = {
-      id: guide._id.toString(),
-      firstName: guide.firstName,
-      lastName: guide.lastName,
-      name: `${guide.firstName} ${guide.lastName}`,
-      description: guide.description,
-      trekAreas: guide.trekAreas || [],
-      experience: guide.experience,
-      education: guide.education,
-      languages: guide.languages || [],
-      ratePerDay: guide.ratePerDay,
-      certifications: guide.certifications || [],
-    };
-    if (isAuthenticated) {
-      transformedGuide.email = guide.email;
-      transformedGuide.phone = guide.phone ?? null;
-      transformedGuide.whatsapp = guide.whatsapp ?? null;
+    const guideObj = { ...guide };
+    if (!req.user) {
+      delete guideObj.email;
+      delete guideObj.phone;
+      delete guideObj.whatsapp;
     }
 
     res.status(200).json({
       success: true,
-      data: transformedGuide,
+      guide: guideObj,
     });
   } catch (error) {
     console.error("Get guide by ID error:", error);
